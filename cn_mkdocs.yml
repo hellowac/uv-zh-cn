@@ -1,0 +1,158 @@
+site_name: uv
+theme:
+  name: material
+  logo: assets/logo-letter.svg
+  favicon: assets/favicon.ico
+  language: zh
+  features:
+    - navigation.path
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.sections
+    - navigation.indexes
+    - navigation.tracking
+    - content.code.annotate
+    - toc.follow
+    - navigation.footer
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    # Note: Using the system theme works with the insiders version
+    # https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/#automatic-light-dark-mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: astral-light
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: astral-dark
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  custom_dir: docs/.overrides
+repo_url: https://github.com/hellowac/uv-zh-cn
+repo_name: uv
+site_author: charliermarsh
+site_url: https://hellowac.github.io/uv-zh-cn
+site_dir: site/uv
+docs_dir: 'cn_docs'
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.snippets:
+  - pymdownx.magiclink:
+  - attr_list:
+  - toc:
+      anchorlink: true
+      anchorlink_class: "toclink"
+  - md_in_html:
+  - pymdownx.inlinehilite:
+  - pymdownx.superfences:
+  - markdown.extensions.attr_list:
+  - pymdownx.keys:
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+plugins:
+  - search
+  - redirects:
+      # Note that redirecting an anchor, e.g., `concepts/projects/#managing-dependencies` must be done
+      # client-side and is implemented in `extra.js` instead.
+      redirect_maps:
+        "concepts/workspaces.md": "concepts/projects/workspaces.md"
+        "concepts/dependencies.md": "concepts/projects/dependencies.md"
+extra_css:
+  - stylesheets/extra.css
+extra_javascript:
+  - js/extra.js
+extra:
+  analytics:
+    provider: fathom
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/astral-sh/uv
+    - icon: fontawesome/brands/discord
+      link: https://discord.com/invite/astral-sh
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/uv/
+    - icon: fontawesome/brands/x-twitter
+      link: https://x.com/astral_sh
+nav:
+  - 简介: index.md
+  - 入门:
+      - getting-started/index.md
+      - 安装: getting-started/installation.md
+      - 第一步: getting-started/first-steps.md
+      - 功能: getting-started/features.md
+      - 获取帮助: getting-started/help.md
+  - 指南:
+      - guides/index.md
+      - 安装 Python: guides/install-python.md
+      - 运行脚本: guides/scripts.md
+      - 使用工具: guides/tools.md
+      - 处理项目: guides/projects.md
+      - 发布包: guides/publish.md
+      - 集成:
+          - guides/integration/index.md
+          - Docker: guides/integration/docker.md
+          - Jupyter: guides/integration/jupyter.md
+          - GitHub Actions: guides/integration/github.md
+          - GitLab CI/CD: guides/integration/gitlab.md
+          - Pre-commit: guides/integration/pre-commit.md
+          - PyTorch: guides/integration/pytorch.md
+          - FastAPI: guides/integration/fastapi.md
+          - 替代索引: guides/integration/alternative-indexes.md
+          - 依赖机器人: guides/integration/dependency-bots.md
+  - 概念:
+      - concepts/index.md
+      - 项目:
+          - concepts/projects/index.md
+          - 结构和文件: concepts/projects/layout.md
+          - 创建项目: concepts/projects/init.md
+          - 管理依赖项: concepts/projects/dependencies.md
+          - 运行命令: concepts/projects/run.md
+          - 锁定和同步: concepts/projects/sync.md
+          - 配置项目: concepts/projects/config.md
+          - 构建发行版: concepts/projects/build.md
+          - 使用工作区: concepts/projects/workspaces.md
+      - 工具: concepts/tools.md
+      - Python 版本: concepts/python-versions.md
+      - 解决方案: concepts/resolution.md
+      - 缓存: concepts/cache.md
+  - 配置:
+      - configuration/index.md
+      - 配置文件: configuration/files.md
+      - 环境变量: configuration/environment.md
+      - 身份验证: configuration/authentication.md
+      - 包索引: configuration/indexes.md
+      - 安装程序: configuration/installer.md
+  - pip 接口:
+      - pip/index.md
+      - 使用环境: pip/environments.md
+      - 管理包: pip/packages.md
+      - 检查包: pip/inspection.md
+      - 声明依赖项: pip/dependencies.md
+      - 锁定环境: pip/compile.md
+      - 与pip的兼容性: pip/compatibility.md
+  - 参考:
+      - reference/index.md
+      - 命令: reference/cli.md
+      - 设置: reference/settings.md
+      - 构建失败: reference/build_failures.md
+      - 解析器: reference/resolver-internals.md
+      - 基本: reference/benchmarks.md
+      - 版本控制: reference/versioning.md
+      - 平台支持: reference/platforms.md
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
