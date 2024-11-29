@@ -1,0 +1,4321 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="charliermarsh">
+      
+      
+        <link rel="canonical" href="https://hellowac.github.io/uv-zh-cn/configuration/environment/">
+      
+      
+        <link rel="prev" href="../files/">
+      
+      
+        <link rel="next" href="../authentication/">
+      
+      
+      <link rel="icon" href="../../assets/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.29">
+    
+    
+
+<title>环境变量 | uv-zh-cn</title>
+
+
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.76a95c52.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  <script src="https://cdn.usefathom.com/script.js" data-site="ESKBRHGN" defer></script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+    
+<link rel="apple-touch-icon" sizes="180x180" href="https://docs.astral.sh/static/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="https://docs.astral.sh/static/favicon-32x32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="https://docs.astral.sh/static/favicon-16x16.png"/>
+<link rel="manifest" href="https://docs.astral.sh/static/site.webmanifest"/>
+<link rel="mask-icon" href="https://docs.astral.sh/static/safari-pinned-tab.svg" color="#2e183d"/>
+<meta name="msapplication-TileColor" content="#d7ff64"/>
+<meta name="theme-color" content="#ffffff"/>
+<meta name="robots" content="index,follow"/>
+<script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Astral Docs",
+        "url": "https://docs.astral.sh"
+    }
+</script>
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="uv-zh-cn" class="md-header__button md-logo" aria-label="uv-zh-cn" data-md-component="logo">
+      
+  <img src="../../assets/logo-letter.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            uv-zh-cn
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              环境变量
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9h-1.9M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69m-9.15 3.96h2.3L12 9l-1.15 3.65Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="astral-light" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="astral-dark" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/hellowac/uv-zh-cn" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    uv-zh-cn
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="uv-zh-cn" class="md-nav__button md-logo" aria-label="uv-zh-cn" data-md-component="logo">
+      
+  <img src="../../assets/logo-letter.svg" alt="logo">
+
+    </a>
+    uv-zh-cn
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/hellowac/uv-zh-cn" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    uv-zh-cn
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    简介
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../getting-started/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    入门
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            入门
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    安装
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/first-steps/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    第一步
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/features/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    功能
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/help/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    获取帮助
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../guides/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    指南
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            指南
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/install-python/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    安装 Python
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/scripts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    运行脚本
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/tools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    使用工具
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/projects/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    处理项目
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/publish/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    发布包
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../guides/integration/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    集成
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            集成
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/jupyter/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/github/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitHub Actions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/gitlab/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitLab CI/CD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/pre-commit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pre-commit
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/pytorch/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PyTorch
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/fastapi/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FastAPI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/alternative-indexes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    替代索引
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/integration/dependency-bots/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    依赖机器人
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../concepts/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    概念
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            概念
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../concepts/projects/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    项目
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            项目
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/projects/layout/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    结构和文件
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/projects/init/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    创建项目
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/projects/dependencies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    管理依赖项
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/projects/run/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    运行命令
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/projects/sync/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    锁定和同步
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/projects/config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    配置项目
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/projects/build/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    构建发行版
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/projects/workspaces/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    使用工作区
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/tools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    工具
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/python-versions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Python 版本
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/resolution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    解析
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/cache/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    缓存
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    配置
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            配置
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    配置文件
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    环境变量
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    环境变量
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#uv_break_system_packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_BREAK_SYSTEM_PACKAGES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_build_constraint" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_BUILD_CONSTRAINT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_cache_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CACHE_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_compile_bytecode" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_COMPILE_BYTECODE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_concurrent_builds" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONCURRENT_BUILDS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_concurrent_downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONCURRENT_DOWNLOADS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_concurrent_installs" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONCURRENT_INSTALLS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_config_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONFIG_FILE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_constraint" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONSTRAINT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_custom_compile_command" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CUSTOM_COMPILE_COMMAND
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_default_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_DEFAULT_INDEX
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_env_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_ENV_FILE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_exclude_newer" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_EXCLUDE_NEWER
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_extra_index_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_EXTRA_INDEX_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_find_links" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_FIND_LINKS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_frozen" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_FROZEN
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_github_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_GITHUB_TOKEN
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_http_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_HTTP_TIMEOUT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index_strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX_STRATEGY
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index_name_password" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX_{name}_PASSWORD
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index_name_username" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX_{name}_USERNAME
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_insecure_host" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INSECURE_HOST
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_installer_ghe_base_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INSTALLER_GHE_BASE_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_installer_github_base_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INSTALLER_GITHUB_BASE_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_install_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INSTALL_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_keyring_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_KEYRING_PROVIDER
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_link_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_LINK_MODE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_locked" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_LOCKED
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_native_tls" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NATIVE_TLS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_build_isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_BUILD_ISOLATION
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_CACHE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_CONFIG
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_env_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_ENV_FILE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_PROGRESS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_SYNC
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_verify_hashes" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_VERIFY_HASHES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_wrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_WRAP
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_override" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_OVERRIDE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_prerelease" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PRERELEASE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PREVIEW
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_project_environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PROJECT_ENVIRONMENT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_check_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_CHECK_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_password" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_PASSWORD
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_TOKEN
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_username" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_USERNAME
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_pypy_install_mirror" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYPY_INSTALL_MIRROR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_bin_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_BIN_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_DOWNLOADS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_install_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_INSTALL_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_install_mirror" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_INSTALL_MIRROR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_preference" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_PREFERENCE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_request_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_REQUEST_TIMEOUT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_require_hashes" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_REQUIRE_HASHES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_RESOLUTION
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_stack_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_STACK_SIZE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_system_python" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_SYSTEM_PYTHON
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_tool_bin_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_TOOL_BIN_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_tool_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_TOOL_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_unmanaged_install" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_UNMANAGED_INSTALL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      外部定义的变量
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="外部定义的变量">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#actions_id_token_request_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actions_id_token_request_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      ACTIONS_ID_TOKEN_REQUEST_URL
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#all_proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      ALL_PROXY
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bash_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      BASH_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clicolor_force" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLICOLOR_FORCE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conda_default_env" class="md-nav__link">
+    <span class="md-ellipsis">
+      CONDA_DEFAULT_ENV
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conda_prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      CONDA_PREFIX
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fish_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      FISH_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#force_color" class="md-nav__link">
+    <span class="md-ellipsis">
+      FORCE_COLOR
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github_actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      GITHUB_ACTIONS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#home" class="md-nav__link">
+    <span class="md-ellipsis">
+      HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#https_proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTPS_PROXY
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#http_proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTP_PROXY
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#http_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTP_TIMEOUT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installer_no_modify_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      INSTALLER_NO_MODIFY_PATH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jpy_session_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      JPY_SESSION_NAME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ksh_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      KSH_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#localappdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      LOCALAPPDATA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macosx_deployment_target" class="md-nav__link">
+    <span class="md-ellipsis">
+      MACOSX_DEPLOYMENT_TARGET
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#netrc" class="md-nav__link">
+    <span class="md-ellipsis">
+      NETRC
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no_color" class="md-nav__link">
+    <span class="md-ellipsis">
+      NO_COLOR
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nu_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      NU_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pager" class="md-nav__link">
+    <span class="md-ellipsis">
+      PAGER
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#path" class="md-nav__link">
+    <span class="md-ellipsis">
+      PATH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      PROMPT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pwd" class="md-nav__link">
+    <span class="md-ellipsis">
+      PWD
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyc_invalidation_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      PYC_INVALIDATION_MODE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pythonpath" class="md-nav__link">
+    <span class="md-ellipsis">
+      PYTHONPATH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rust_log" class="md-nav__link">
+    <span class="md-ellipsis">
+      RUST_LOG
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      SHELL
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssl_cert_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSL_CERT_FILE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssl_client_cert" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSL_CLIENT_CERT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#systemdrive" class="md-nav__link">
+    <span class="md-ellipsis">
+      SYSTEMDRIVE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tracing_durations_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      TRACING_DURATIONS_FILE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#virtual_env" class="md-nav__link">
+    <span class="md-ellipsis">
+      VIRTUAL_ENV
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#virtual_env_disable_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      VIRTUAL_ENV_DISABLE_PROMPT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_bin_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_BIN_HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_cache_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_CACHE_HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_config_dirs" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_CONFIG_DIRS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_config_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_CONFIG_HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_data_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_DATA_HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zdotdir" class="md-nav__link">
+    <span class="md-ellipsis">
+      ZDOTDIR
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zsh_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      ZSH_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    身份验证
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../indexes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    包索引
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    安装程序
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../pip/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    pip 接口
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            pip 接口
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pip/environments/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    使用环境
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pip/packages/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    管理包
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pip/inspection/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    检查包
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pip/dependencies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    声明依赖项
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pip/compile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    锁定环境
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pip/compatibility/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    与pip的兼容性
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    参考
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            参考
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    命令
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    设置
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/build_failures/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    构建失败
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/resolver-internals/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    解析器
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/benchmarks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    性能基准
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/versioning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    版本控制
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/platforms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    平台支持
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#uv_break_system_packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_BREAK_SYSTEM_PACKAGES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_build_constraint" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_BUILD_CONSTRAINT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_cache_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CACHE_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_compile_bytecode" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_COMPILE_BYTECODE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_concurrent_builds" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONCURRENT_BUILDS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_concurrent_downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONCURRENT_DOWNLOADS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_concurrent_installs" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONCURRENT_INSTALLS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_config_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONFIG_FILE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_constraint" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CONSTRAINT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_custom_compile_command" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_CUSTOM_COMPILE_COMMAND
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_default_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_DEFAULT_INDEX
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_env_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_ENV_FILE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_exclude_newer" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_EXCLUDE_NEWER
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_extra_index_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_EXTRA_INDEX_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_find_links" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_FIND_LINKS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_frozen" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_FROZEN
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_github_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_GITHUB_TOKEN
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_http_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_HTTP_TIMEOUT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index_strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX_STRATEGY
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index_name_password" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX_{name}_PASSWORD
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_index_name_username" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INDEX_{name}_USERNAME
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_insecure_host" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INSECURE_HOST
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_installer_ghe_base_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INSTALLER_GHE_BASE_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_installer_github_base_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INSTALLER_GITHUB_BASE_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_install_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_INSTALL_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_keyring_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_KEYRING_PROVIDER
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_link_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_LINK_MODE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_locked" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_LOCKED
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_native_tls" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NATIVE_TLS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_build_isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_BUILD_ISOLATION
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_CACHE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_CONFIG
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_env_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_ENV_FILE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_PROGRESS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_SYNC
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_verify_hashes" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_VERIFY_HASHES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_no_wrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_NO_WRAP
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_override" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_OVERRIDE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_prerelease" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PRERELEASE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PREVIEW
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_project_environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PROJECT_ENVIRONMENT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_check_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_CHECK_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_password" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_PASSWORD
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_TOKEN
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_publish_username" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PUBLISH_USERNAME
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_pypy_install_mirror" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYPY_INSTALL_MIRROR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_bin_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_BIN_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_DOWNLOADS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_install_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_INSTALL_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_install_mirror" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_INSTALL_MIRROR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_python_preference" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_PYTHON_PREFERENCE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_request_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_REQUEST_TIMEOUT
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_require_hashes" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_REQUIRE_HASHES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_RESOLUTION
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_stack_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_STACK_SIZE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_system_python" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_SYSTEM_PYTHON
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_tool_bin_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_TOOL_BIN_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_tool_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_TOOL_DIR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uv_unmanaged_install" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV_UNMANAGED_INSTALL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      外部定义的变量
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="外部定义的变量">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#actions_id_token_request_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actions_id_token_request_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      ACTIONS_ID_TOKEN_REQUEST_URL
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#all_proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      ALL_PROXY
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bash_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      BASH_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clicolor_force" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLICOLOR_FORCE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conda_default_env" class="md-nav__link">
+    <span class="md-ellipsis">
+      CONDA_DEFAULT_ENV
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conda_prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      CONDA_PREFIX
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fish_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      FISH_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#force_color" class="md-nav__link">
+    <span class="md-ellipsis">
+      FORCE_COLOR
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github_actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      GITHUB_ACTIONS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#home" class="md-nav__link">
+    <span class="md-ellipsis">
+      HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#https_proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTPS_PROXY
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#http_proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTP_PROXY
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#http_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      HTTP_TIMEOUT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installer_no_modify_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      INSTALLER_NO_MODIFY_PATH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jpy_session_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      JPY_SESSION_NAME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ksh_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      KSH_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#localappdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      LOCALAPPDATA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macosx_deployment_target" class="md-nav__link">
+    <span class="md-ellipsis">
+      MACOSX_DEPLOYMENT_TARGET
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#netrc" class="md-nav__link">
+    <span class="md-ellipsis">
+      NETRC
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no_color" class="md-nav__link">
+    <span class="md-ellipsis">
+      NO_COLOR
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nu_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      NU_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pager" class="md-nav__link">
+    <span class="md-ellipsis">
+      PAGER
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#path" class="md-nav__link">
+    <span class="md-ellipsis">
+      PATH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      PROMPT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pwd" class="md-nav__link">
+    <span class="md-ellipsis">
+      PWD
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyc_invalidation_mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      PYC_INVALIDATION_MODE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pythonpath" class="md-nav__link">
+    <span class="md-ellipsis">
+      PYTHONPATH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rust_log" class="md-nav__link">
+    <span class="md-ellipsis">
+      RUST_LOG
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      SHELL
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssl_cert_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSL_CERT_FILE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssl_client_cert" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSL_CLIENT_CERT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#systemdrive" class="md-nav__link">
+    <span class="md-ellipsis">
+      SYSTEMDRIVE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tracing_durations_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      TRACING_DURATIONS_FILE
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#virtual_env" class="md-nav__link">
+    <span class="md-ellipsis">
+      VIRTUAL_ENV
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#virtual_env_disable_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      VIRTUAL_ENV_DISABLE_PROMPT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_bin_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_BIN_HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_cache_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_CACHE_HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_config_dirs" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_CONFIG_DIRS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_config_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_CONFIG_HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xdg_data_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      XDG_DATA_HOME
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zdotdir" class="md-nav__link">
+    <span class="md-ellipsis">
+      ZDOTDIR
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zsh_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      ZSH_VERSION
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="_1"><a class="toclink" href="#_1">环境变量</a></h1>
+<p>uv 定义并尊重以下环境变量：</p>
+<h3 id="uv_break_system_packages"><a class="toclink" href="#uv_break_system_packages"><code>UV_BREAK_SYSTEM_PACKAGES</code></a></h3>
+<p>等同于 <code>--break-system-packages</code> 命令行参数。如果设置为 <code>true</code>，uv 将允许安装与系统安装的软件包冲突的软件包。
+警告：<code>UV_BREAK_SYSTEM_PACKAGES=true</code> 仅应在持续集成（CI）或容器化环境中使用，并应谨慎使用，因为修改系统 Python 可能导致意外行为。</p>
+<h3 id="uv_build_constraint"><a class="toclink" href="#uv_build_constraint"><code>UV_BUILD_CONSTRAINT</code></a></h3>
+<p>等同于 <code>--build-constraint</code> 命令行参数。如果设置，uv 将使用该文件作为源代码分发构建的约束。使用以空格分隔的文件列表。</p>
+<h3 id="uv_cache_dir"><a class="toclink" href="#uv_cache_dir"><code>UV_CACHE_DIR</code></a></h3>
+<p>等同于 <code>--cache-dir</code> 命令行参数。如果设置，uv 将使用此目录进行缓存，而不是默认的缓存目录。</p>
+<h3 id="uv_compile_bytecode"><a class="toclink" href="#uv_compile_bytecode"><code>UV_COMPILE_BYTECODE</code></a></h3>
+<p>等同于 <code>--compile-bytecode</code> 命令行参数。如果设置，uv 将在安装后编译 Python 源代码文件为字节码。</p>
+<h3 id="uv_concurrent_builds"><a class="toclink" href="#uv_concurrent_builds"><code>UV_CONCURRENT_BUILDS</code></a></h3>
+<p>设置 uv 在任何给定时间并发构建的源代码分发包的最大数量。</p>
+<h3 id="uv_concurrent_downloads"><a class="toclink" href="#uv_concurrent_downloads"><code>UV_CONCURRENT_DOWNLOADS</code></a></h3>
+<p>设置 uv 在任何给定时间并发下载的最大数量。</p>
+<h3 id="uv_concurrent_installs"><a class="toclink" href="#uv_concurrent_installs"><code>UV_CONCURRENT_INSTALLS</code></a></h3>
+<p>控制安装和解压包时使用的线程数。</p>
+<h3 id="uv_config_file"><a class="toclink" href="#uv_config_file"><code>UV_CONFIG_FILE</code></a></h3>
+<p>等同于 <code>--config-file</code> 命令行参数。期望一个指向本地 <code>uv.toml</code> 配置文件的路径。</p>
+<h3 id="uv_constraint"><a class="toclink" href="#uv_constraint"><code>UV_CONSTRAINT</code></a></h3>
+<p>等同于 <code>--constraint</code> 命令行参数。如果设置，uv 将使用该文件作为约束文件。使用以空格分隔的文件列表。</p>
+<h3 id="uv_custom_compile_command"><a class="toclink" href="#uv_custom_compile_command"><code>UV_CUSTOM_COMPILE_COMMAND</code></a></h3>
+<p>等同于 <code>--custom-compile-command</code> 命令行参数。用于在 <code>uv pip compile</code> 生成的 <code>requirements.txt</code> 文件的输出头部覆盖 uv。适用于从包装脚本中调用 <code>uv pip compile</code> 的情况，以便在输出文件中包含包装脚本的名称。</p>
+<h3 id="uv_default_index"><a class="toclink" href="#uv_default_index"><code>UV_DEFAULT_INDEX</code></a></h3>
+<p>等同于 <code>--default-index</code> 命令行参数。如果设置，uv 将在搜索软件包时使用此 URL 作为默认索引。</p>
+<h3 id="uv_env_file"><a class="toclink" href="#uv_env_file"><code>UV_ENV_FILE</code></a></h3>
+<p><code>.env</code> 文件，用于在执行 <code>uv run</code> 命令时加载环境变量。</p>
+<h3 id="uv_exclude_newer"><a class="toclink" href="#uv_exclude_newer"><code>UV_EXCLUDE_NEWER</code></a></h3>
+<p>等同于 <code>--exclude-newer</code> 命令行参数。如果设置，uv 将排除在指定日期之后发布的分发包。</p>
+<h3 id="uv_extra_index_url"><a class="toclink" href="#uv_extra_index_url"><code>UV_EXTRA_INDEX_URL</code></a></h3>
+<p>等同于 <code>--extra-index-url</code> 命令行参数。如果设置，uv 将使用此空格分隔的 URL 列表作为额外的索引来搜索软件包。
+（已弃用：改用 <code>UV_INDEX</code>。）</p>
+<h3 id="uv_find_links"><a class="toclink" href="#uv_find_links"><code>UV_FIND_LINKS</code></a></h3>
+<p>等同于 <code>--find-links</code> 命令行参数。如果设置，uv 将使用此以逗号分隔的额外位置列表来搜索软件包。</p>
+<h3 id="uv_frozen"><a class="toclink" href="#uv_frozen"><code>UV_FROZEN</code></a></h3>
+<p>等同于 <code>--frozen</code> 命令行参数。如果设置，uv 将运行而不更新 <code>uv.lock</code> 文件。</p>
+<h3 id="uv_github_token"><a class="toclink" href="#uv_github_token"><code>UV_GITHUB_TOKEN</code></a></h3>
+<p>等同于自我更新的 <code>--token</code> 参数。用于身份验证的 GitHub 令牌。</p>
+<h3 id="uv_http_timeout"><a class="toclink" href="#uv_http_timeout"><code>UV_HTTP_TIMEOUT</code></a></h3>
+<p>HTTP 请求的超时时间（以秒为单位）。默认值：30 秒。</p>
+<h3 id="uv_index"><a class="toclink" href="#uv_index"><code>UV_INDEX</code></a></h3>
+<p>等同于 <code>--index</code> 命令行参数。如果设置，uv 将使用此空格分隔的 URL 列表作为额外的索引来搜索软件包。</p>
+<h3 id="uv_index_strategy"><a class="toclink" href="#uv_index_strategy"><code>UV_INDEX_STRATEGY</code></a></h3>
+<p>等同于 <code>--index-strategy</code> 命令行参数。例如，如果设置为 <code>unsafe-any-match</code>，uv 将考虑通过所有索引 URL 提供的给定软件包版本，而不是将其搜索限制在包含该软件包的第一个索引 URL。</p>
+<h3 id="uv_index_url"><a class="toclink" href="#uv_index_url"><code>UV_INDEX_URL</code></a></h3>
+<p>等同于 <code>--index-url</code> 命令行参数。如果设置，uv 将使用此 URL 作为默认索引来搜索软件包。
+（已弃用：改用 <code>UV_DEFAULT_INDEX</code>。）</p>
+<h3 id="uv_index_name_password"><a class="toclink" href="#uv_index_name_password"><code>UV_INDEX_{name}_PASSWORD</code></a></h3>
+<p>为 HTTP 基本身份验证密码生成环境变量键。</p>
+<h3 id="uv_index_name_username"><a class="toclink" href="#uv_index_name_username"><code>UV_INDEX_{name}_USERNAME</code></a></h3>
+<p>为 HTTP 基本身份验证用户名生成环境变量键。</p>
+<h3 id="uv_insecure_host"><a class="toclink" href="#uv_insecure_host"><code>UV_INSECURE_HOST</code></a></h3>
+<p>等同于 <code>--allow-insecure-host</code> 参数。</p>
+<h3 id="uv_installer_ghe_base_url"><a class="toclink" href="#uv_installer_ghe_base_url"><code>UV_INSTALLER_GHE_BASE_URL</code></a></h3>
+<p>用于通过独立安装程序和 <code>self update</code> 功能下载 uv 的 URL，替代默认的 GitHub 企业版 URL。</p>
+<h3 id="uv_installer_github_base_url"><a class="toclink" href="#uv_installer_github_base_url"><code>UV_INSTALLER_GITHUB_BASE_URL</code></a></h3>
+<p>用于通过独立安装程序和 <code>self update</code> 功能下载 uv 的 URL，替代默认的 GitHub URL。</p>
+<h3 id="uv_install_dir"><a class="toclink" href="#uv_install_dir"><code>UV_INSTALL_DIR</code></a></h3>
+<p>使用独立安装程序和 <code>self update</code> 功能安装 uv 的目录。默认值为 <code>~/.local/bin</code>。</p>
+<h3 id="uv_keyring_provider"><a class="toclink" href="#uv_keyring_provider"><code>UV_KEYRING_PROVIDER</code></a></h3>
+<p>等同于 <code>--keyring-provider</code> 命令行参数。如果设置，uv 将使用此值作为密钥环提供者。</p>
+<h3 id="uv_link_mode"><a class="toclink" href="#uv_link_mode"><code>UV_LINK_MODE</code></a></h3>
+<p>等同于 <code>--link-mode</code> 命令行参数。如果设置，uv 将使用此值作为链接模式。</p>
+<h3 id="uv_locked"><a class="toclink" href="#uv_locked"><code>UV_LOCKED</code></a></h3>
+<p>等同于 <code>--locked</code> 命令行参数。如果设置，uv 将确保 <code>uv.lock</code> 文件保持不变。</p>
+<h3 id="uv_native_tls"><a class="toclink" href="#uv_native_tls"><code>UV_NATIVE_TLS</code></a></h3>
+<p>等同于 <code>--native-tls</code> 命令行参数。如果设置为 <code>true</code>，uv 将使用系统的信任存储，而不是捆绑的 <code>webpki-roots</code> crate。</p>
+<h3 id="uv_no_build_isolation"><a class="toclink" href="#uv_no_build_isolation"><code>UV_NO_BUILD_ISOLATION</code></a></h3>
+<p>等同于 <code>--no-build-isolation</code> 命令行参数。如果设置，uv 将在构建源分发包时跳过隔离。</p>
+<h3 id="uv_no_cache"><a class="toclink" href="#uv_no_cache"><code>UV_NO_CACHE</code></a></h3>
+<p>等同于 <code>--no-cache</code> 命令行参数。如果设置，uv 将不会在任何操作中使用缓存。</p>
+<h3 id="uv_no_config"><a class="toclink" href="#uv_no_config"><code>UV_NO_CONFIG</code></a></h3>
+<p>等同于 <code>--no-config</code> 命令行参数。如果设置，uv 将不会读取当前目录、父目录或用户配置目录中的任何配置文件。</p>
+<h3 id="uv_no_env_file"><a class="toclink" href="#uv_no_env_file"><code>UV_NO_ENV_FILE</code></a></h3>
+<p>执行 <code>uv run</code> 命令时忽略 <code>.env</code> 文件。</p>
+<h3 id="uv_no_progress"><a class="toclink" href="#uv_no_progress"><code>UV_NO_PROGRESS</code></a></h3>
+<p>等同于 <code>--no-progress</code> 命令行参数。禁用所有进度输出。例如，旋转器和进度条。</p>
+<h3 id="uv_no_sync"><a class="toclink" href="#uv_no_sync"><code>UV_NO_SYNC</code></a></h3>
+<p>等同于 <code>--no-sync</code> 命令行参数。如果设置，uv 将跳过更新环境。</p>
+<h3 id="uv_no_verify_hashes"><a class="toclink" href="#uv_no_verify_hashes"><code>UV_NO_VERIFY_HASHES</code></a></h3>
+<p>等同于 <code>--no-verify-hashes</code> 命令行参数。禁用 <code>requirements.txt</code> 文件的哈希验证。</p>
+<h3 id="uv_no_wrap"><a class="toclink" href="#uv_no_wrap"><code>UV_NO_WRAP</code></a></h3>
+<p>用于禁用诊断信息的换行。</p>
+<h3 id="uv_override"><a class="toclink" href="#uv_override"><code>UV_OVERRIDE</code></a></h3>
+<p>等同于 <code>--override</code> 命令行参数。如果设置，uv 将使用此文件作为覆盖文件。使用以空格分隔的文件列表。</p>
+<h3 id="uv_prerelease"><a class="toclink" href="#uv_prerelease"><code>UV_PRERELEASE</code></a></h3>
+<p>等同于 <code>--prerelease</code> 命令行参数。例如，如果设置为 <code>allow</code>，uv 将允许所有依赖项使用预发布版本。</p>
+<h3 id="uv_preview"><a class="toclink" href="#uv_preview"><code>UV_PREVIEW</code></a></h3>
+<p>等同于 <code>--preview</code> 命令行参数。启用预览模式。</p>
+<h3 id="uv_project_environment"><a class="toclink" href="#uv_project_environment"><code>UV_PROJECT_ENVIRONMENT</code></a></h3>
+<p>指定用于项目虚拟环境的目录路径。有关详细信息，请参见 <a href="../../concepts/projects/config/#project-environment-path">项目文档</a>。</p>
+<h3 id="uv_publish_check_url"><a class="toclink" href="#uv_publish_check_url"><code>UV_PUBLISH_CHECK_URL</code></a></h3>
+<p>如果文件已存在于索引中，则不上传该文件。值为索引的 URL。</p>
+<h3 id="uv_publish_password"><a class="toclink" href="#uv_publish_password"><code>UV_PUBLISH_PASSWORD</code></a></h3>
+<p>等同于 <code>uv publish</code> 中的 <code>--password</code> 命令行参数。如果设置，uv 将使用此密码进行发布。</p>
+<h3 id="uv_publish_token"><a class="toclink" href="#uv_publish_token"><code>UV_PUBLISH_TOKEN</code></a></h3>
+<p>等同于 <code>uv publish</code> 中的 <code>--token</code> 命令行参数。如果设置，uv 将使用此令牌（用户名为 <code>__token__</code>）进行发布。</p>
+<h3 id="uv_publish_url"><a class="toclink" href="#uv_publish_url"><code>UV_PUBLISH_URL</code></a></h3>
+<p>等同于 <code>uv publish</code> 中的 <code>--publish-url</code> 命令行参数。用于 <code>uv publish</code> 的索引上传端点的 URL。</p>
+<h3 id="uv_publish_username"><a class="toclink" href="#uv_publish_username"><code>UV_PUBLISH_USERNAME</code></a></h3>
+<p>等同于 <code>uv publish</code> 中的 <code>--username</code> 命令行参数。如果设置，uv 将使用此用户名进行发布。</p>
+<h3 id="uv_pypy_install_mirror"><a class="toclink" href="#uv_pypy_install_mirror"><code>UV_PYPY_INSTALL_MIRROR</code></a></h3>
+<p>托管的 PyPy 安装包是从 <a href="https://downloads.python.org/">python.org</a> 下载的。可以将此变量设置为镜像 URL，以使用不同的源下载 PyPy 安装包。提供的 URL 将替代 <code>https://downloads.python.org/pypy</code>，例如，<code>https://downloads.python.org/pypy/pypy3.8-v7.3.7-osx64.tar.bz2</code>。可以通过使用 <code>file://</code> URL 方案从本地目录读取分发包。</p>
+<h3 id="uv_python"><a class="toclink" href="#uv_python"><code>UV_PYTHON</code></a></h3>
+<p>等同于 <code>--python</code> 命令行参数。如果设置为路径，uv 将使用此 Python 解释器进行所有操作。</p>
+<h3 id="uv_python_bin_dir"><a class="toclink" href="#uv_python_bin_dir"><code>UV_PYTHON_BIN_DIR</code></a></h3>
+<p>指定存放已安装的、托管的 Python 可执行文件的目录。</p>
+<h3 id="uv_python_downloads"><a class="toclink" href="#uv_python_downloads"><code>UV_PYTHON_DOWNLOADS</code></a></h3>
+<p>等同于 <a href="../../reference/settings/#python-downloads"><code>python-downloads</code></a> 设置，并且在禁用时等同于 <code>--no-python-downloads</code> 选项。控制 uv 是否允许下载 Python。</p>
+<h3 id="uv_python_install_dir"><a class="toclink" href="#uv_python_install_dir"><code>UV_PYTHON_INSTALL_DIR</code></a></h3>
+<p>指定存储托管 Python 安装包的目录。</p>
+<h3 id="uv_python_install_mirror"><a class="toclink" href="#uv_python_install_mirror"><code>UV_PYTHON_INSTALL_MIRROR</code></a></h3>
+<p>托管的 Python 安装包是从 <a href="https://github.com/indygreg/python-build-standalone"><code>python-build-standalone</code></a> 下载的。可以将此变量设置为镜像 URL，以使用不同的源下载 Python 安装包。提供的 URL 将替代 <code>https://github.com/indygreg/python-build-standalone/releases/download</code>，例如，<code>https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz</code>。可以通过使用 <code>file://</code> URL 方案从本地目录读取分发包。</p>
+<h3 id="uv_python_preference"><a class="toclink" href="#uv_python_preference"><code>UV_PYTHON_PREFERENCE</code></a></h3>
+<p>等同于 <code>--python-preference</code> 命令行参数。控制 uv 是否更偏好使用系统 Python 版本或托管的 Python 版本。</p>
+<h3 id="uv_request_timeout"><a class="toclink" href="#uv_request_timeout"><code>UV_REQUEST_TIMEOUT</code></a></h3>
+<p>HTTP 请求的超时时间（以秒为单位）。等同于 <code>UV_HTTP_TIMEOUT</code>。</p>
+<h3 id="uv_require_hashes"><a class="toclink" href="#uv_require_hashes"><code>UV_REQUIRE_HASHES</code></a></h3>
+<p>等同于 <code>--require-hashes</code> 命令行参数。如果设置为 <code>true</code>，uv 将要求所有依赖项在要求文件中指定哈希值。</p>
+<h3 id="uv_resolution"><a class="toclink" href="#uv_resolution"><code>UV_RESOLUTION</code></a></h3>
+<p>等同于 <code>--resolution</code> 命令行参数。例如，如果设置为 <code>lowest-direct</code>，uv 将安装所有直接依赖项的最低兼容版本。</p>
+<h3 id="uv_stack_size"><a class="toclink" href="#uv_stack_size"><code>UV_STACK_SIZE</code></a></h3>
+<p>用于增加在 Windows 上调试版本中 uv 使用的堆栈大小。</p>
+<h3 id="uv_system_python"><a class="toclink" href="#uv_system_python"><code>UV_SYSTEM_PYTHON</code></a></h3>
+<p>等同于 <code>--system</code> 命令行参数。如果设置为 <code>true</code>，uv 将使用在系统 <code>PATH</code> 中找到的第一个 Python 解释器。<br />
+警告：<code>UV_SYSTEM_PYTHON=true</code> 仅适用于持续集成（CI）或容器化环境，应谨慎使用，因为修改系统 Python 可能会导致不可预期的行为。</p>
+<h3 id="uv_tool_bin_dir"><a class="toclink" href="#uv_tool_bin_dir"><code>UV_TOOL_BIN_DIR</code></a></h3>
+<p>指定用于安装工具可执行文件的 "bin" 目录。</p>
+<h3 id="uv_tool_dir"><a class="toclink" href="#uv_tool_dir"><code>UV_TOOL_DIR</code></a></h3>
+<p>指定 uv 存储托管工具的目录。</p>
+<h3 id="uv_unmanaged_install"><a class="toclink" href="#uv_unmanaged_install"><code>UV_UNMANAGED_INSTALL</code></a></h3>
+<p>用于 CI 等短暂环境，将 uv 安装到特定路径，同时防止安装程序修改 shell 配置文件或环境变量。</p>
+<h2 id="_2"><a class="toclink" href="#_2">外部定义的变量</a></h2>
+<p>uv 还读取以下外部定义的环境变量：</p>
+<h3 id="actions_id_token_request_token"><a class="toclink" href="#actions_id_token_request_token"><code>ACTIONS_ID_TOKEN_REQUEST_TOKEN</code></a></h3>
+<p>用于通过 <code>uv publish</code> 进行受信发布。包含 oidc 请求令牌。</p>
+<h3 id="actions_id_token_request_url"><a class="toclink" href="#actions_id_token_request_url"><code>ACTIONS_ID_TOKEN_REQUEST_URL</code></a></h3>
+<p>用于通过 <code>uv publish</code> 进行受信发布。包含 oidc 令牌 URL。</p>
+<h3 id="all_proxy"><a class="toclink" href="#all_proxy"><code>ALL_PROXY</code></a></h3>
+<p>用于所有网络请求的通用代理。</p>
+<h3 id="bash_version"><a class="toclink" href="#bash_version"><code>BASH_VERSION</code></a></h3>
+<p>用于检测是否使用了 Bash shell。</p>
+<h3 id="clicolor_force"><a class="toclink" href="#clicolor_force"><code>CLICOLOR_FORCE</code></a></h3>
+<p>用于通过 <code>anstyle</code> 控制颜色。</p>
+<h3 id="conda_default_env"><a class="toclink" href="#conda_default_env"><code>CONDA_DEFAULT_ENV</code></a></h3>
+<p>用于确定当前激活的 Conda 环境是否为基础环境。</p>
+<h3 id="conda_prefix"><a class="toclink" href="#conda_prefix"><code>CONDA_PREFIX</code></a></h3>
+<p>用于检测是否激活了 Conda 环境。</p>
+<h3 id="fish_version"><a class="toclink" href="#fish_version"><code>FISH_VERSION</code></a></h3>
+<p>用于检测是否使用了 Fish shell。</p>
+<h3 id="force_color"><a class="toclink" href="#force_color"><code>FORCE_COLOR</code></a></h3>
+<p>强制输出彩色内容，无论终端是否支持。</p>
+<p>请参阅 <a href="https://force-color.org">force-color.org</a>。</p>
+<h3 id="github_actions"><a class="toclink" href="#github_actions"><code>GITHUB_ACTIONS</code></a></h3>
+<p>用于通过 <code>uv publish</code> 进行受信发布。</p>
+<h3 id="home"><a class="toclink" href="#home"><code>HOME</code></a></h3>
+<p>标准的 <code>HOME</code> 环境变量。</p>
+<h3 id="https_proxy"><a class="toclink" href="#https_proxy"><code>HTTPS_PROXY</code></a></h3>
+<p>HTTPS 请求的代理。</p>
+<h3 id="http_proxy"><a class="toclink" href="#http_proxy"><code>HTTP_PROXY</code></a></h3>
+<p>HTTP 请求的代理。</p>
+<h3 id="http_timeout"><a class="toclink" href="#http_timeout"><code>HTTP_TIMEOUT</code></a></h3>
+<p>HTTP 请求的超时时间（以秒为单位）。等同于 <code>UV_HTTP_TIMEOUT</code>。</p>
+<h3 id="installer_no_modify_path"><a class="toclink" href="#installer_no_modify_path"><code>INSTALLER_NO_MODIFY_PATH</code></a></h3>
+<p>在使用独立安装程序和 <code>self update</code> 功能安装 uv 时，避免修改 <code>PATH</code> 环境变量。</p>
+<h3 id="jpy_session_name"><a class="toclink" href="#jpy_session_name"><code>JPY_SESSION_NAME</code></a></h3>
+<p>用于检测是否在 Jupyter notebook 中运行。</p>
+<h3 id="ksh_version"><a class="toclink" href="#ksh_version"><code>KSH_VERSION</code></a></h3>
+<p>用于检测是否使用了 Ksh shell。</p>
+<h3 id="localappdata"><a class="toclink" href="#localappdata"><code>LOCALAPPDATA</code></a></h3>
+<p>用于查找 Microsoft Store 中的 Python 安装。</p>
+<h3 id="macosx_deployment_target"><a class="toclink" href="#macosx_deployment_target"><code>MACOSX_DEPLOYMENT_TARGET</code></a></h3>
+<p>与 <code>--python-platform macos</code> 及相关变体一起使用，用于设置部署目标（即，最低支持的 macOS 版本）。</p>
+<p>默认为 <code>12.0</code>，即在写作时最旧的非 EOL macOS 版本。</p>
+<h3 id="netrc"><a class="toclink" href="#netrc"><code>NETRC</code></a></h3>
+<p>用于设置 <code>.netrc</code> 文件的位置。</p>
+<h3 id="no_color"><a class="toclink" href="#no_color"><code>NO_COLOR</code></a></h3>
+<p>禁用彩色输出（优先于 <code>FORCE_COLOR</code>）。</p>
+<p>请参阅 <a href="https://no-color.org">no-color.org</a>。</p>
+<h3 id="nu_version"><a class="toclink" href="#nu_version"><code>NU_VERSION</code></a></h3>
+<p>用于检测 <code>NuShell</code> 的使用。</p>
+<h3 id="pager"><a class="toclink" href="#pager"><code>PAGER</code></a></h3>
+<p>标准的 <code>PAGER</code> posix 环境变量。由 <code>uv</code> 用于配置适当的分页器。</p>
+<h3 id="path"><a class="toclink" href="#path"><code>PATH</code></a></h3>
+<p>标准的 <code>PATH</code> 环境变量。</p>
+<h3 id="prompt"><a class="toclink" href="#prompt"><code>PROMPT</code></a></h3>
+<p>用于检测是否使用了 Windows 命令提示符（与 PowerShell 相对）。</p>
+<h3 id="pwd"><a class="toclink" href="#pwd"><code>PWD</code></a></h3>
+<p>标准的 <code>PWD</code> posix 环境变量。</p>
+<h3 id="pyc_invalidation_mode"><a class="toclink" href="#pyc_invalidation_mode"><code>PYC_INVALIDATION_MODE</code></a></h3>
+<p>在使用 <code>--compile</code> 时运行时的验证模式。</p>
+<p>请参阅 <a href="https://docs.python.org/3/library/py_compile.html#py_compile.PycInvalidationMode"><code>PycInvalidationMode</code></a>。</p>
+<h3 id="pythonpath"><a class="toclink" href="#pythonpath"><code>PYTHONPATH</code></a></h3>
+<p>添加目录到 Python 模块搜索路径（例如，<code>PYTHONPATH=/path/to/modules</code>）。</p>
+<h3 id="rust_log"><a class="toclink" href="#rust_log"><code>RUST_LOG</code></a></h3>
+<p>如果设置，uv 将使用此值作为其 <code>--verbose</code> 输出的日志级别。接受与 <code>tracing_subscriber</code> crate 兼容的任何过滤器。
+例如：
+* <code>RUST_LOG=uv=debug</code> 相当于在命令行中添加 <code>--verbose</code>
+* <code>RUST_LOG=trace</code> 将启用追踪级别的日志记录。</p>
+<p>请参阅 <a href="https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#example-syntax">tracing 文档</a> 了解更多信息。</p>
+<h3 id="shell"><a class="toclink" href="#shell"><code>SHELL</code></a></h3>
+<p>标准的 <code>SHELL</code> posix 环境变量。</p>
+<h3 id="ssl_cert_file"><a class="toclink" href="#ssl_cert_file"><code>SSL_CERT_FILE</code></a></h3>
+<p>用于 SSL 连接的自定义证书捆绑文件路径。</p>
+<h3 id="ssl_client_cert"><a class="toclink" href="#ssl_client_cert"><code>SSL_CLIENT_CERT</code></a></h3>
+<p>如果设置，uv 将使用此文件进行 mTLS 认证。
+该文件应包含证书和私钥，格式为 PEM。</p>
+<h3 id="systemdrive"><a class="toclink" href="#systemdrive"><code>SYSTEMDRIVE</code></a></h3>
+<p>Windows 系统中系统级配置目录的路径。</p>
+<h3 id="tracing_durations_file"><a class="toclink" href="#tracing_durations_file"><code>TRACING_DURATIONS_FILE</code></a></h3>
+<p>用于通过 <code>tracing-durations-export</code> 功能创建追踪持续时间文件。</p>
+<h3 id="virtual_env"><a class="toclink" href="#virtual_env"><code>VIRTUAL_ENV</code></a></h3>
+<p>用于检测已激活的虚拟环境。</p>
+<h3 id="virtual_env_disable_prompt"><a class="toclink" href="#virtual_env_disable_prompt"><code>VIRTUAL_ENV_DISABLE_PROMPT</code></a></h3>
+<p>如果在虚拟环境激活之前将其设置为 <code>1</code>，则虚拟环境的名称将不会加到终端提示符前。</p>
+<h3 id="xdg_bin_home"><a class="toclink" href="#xdg_bin_home"><code>XDG_BIN_HOME</code></a></h3>
+<p>可执行文件安装目录的路径。</p>
+<h3 id="xdg_cache_home"><a class="toclink" href="#xdg_cache_home"><code>XDG_CACHE_HOME</code></a></h3>
+<p>Unix 系统上的缓存目录路径。</p>
+<h3 id="xdg_config_dirs"><a class="toclink" href="#xdg_config_dirs"><code>XDG_CONFIG_DIRS</code></a></h3>
+<p>Unix 系统上系统级配置目录的路径。</p>
+<h3 id="xdg_config_home"><a class="toclink" href="#xdg_config_home"><code>XDG_CONFIG_HOME</code></a></h3>
+<p>Unix 系统上用户级配置目录的路径。</p>
+<h3 id="xdg_data_home"><a class="toclink" href="#xdg_data_home"><code>XDG_DATA_HOME</code></a></h3>
+<p>用于存储管理的 Python 安装和工具的目录路径。</p>
+<h3 id="zdotdir"><a class="toclink" href="#zdotdir"><code>ZDOTDIR</code></a></h3>
+<p>用于确定在使用 Zsh 时应使用哪个 <code>.zshenv</code> 文件。</p>
+<h3 id="zsh_version"><a class="toclink" href="#zsh_version"><code>ZSH_VERSION</code></a></h3>
+<p>用于检测 Zsh shell 的使用情况。</p>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚" >
+        
+          
+          <a href="../files/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 配置文件">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                配置文件
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../authentication/" class="md-footer__link md-footer__link--next" aria-label="下一页: 身份验证">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                身份验证
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/astral-sh/uv" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://discord.com/invite/astral-sh" target="_blank" rel="noopener" title="discord.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M524.531 69.836a1.5 1.5 0 0 0-.764-.7A485.065 485.065 0 0 0 404.081 32.03a1.816 1.816 0 0 0-1.923.91 337.461 337.461 0 0 0-14.9 30.6 447.848 447.848 0 0 0-134.426 0 309.541 309.541 0 0 0-15.135-30.6 1.89 1.89 0 0 0-1.924-.91 483.689 483.689 0 0 0-119.688 37.107 1.712 1.712 0 0 0-.788.676C39.068 183.651 18.186 294.69 28.43 404.354a2.016 2.016 0 0 0 .765 1.375 487.666 487.666 0 0 0 146.825 74.189 1.9 1.9 0 0 0 2.063-.676A348.2 348.2 0 0 0 208.12 430.4a1.86 1.86 0 0 0-1.019-2.588 321.173 321.173 0 0 1-45.868-21.853 1.885 1.885 0 0 1-.185-3.126 251.047 251.047 0 0 0 9.109-7.137 1.819 1.819 0 0 1 1.9-.256c96.229 43.917 200.41 43.917 295.5 0a1.812 1.812 0 0 1 1.924.233 234.533 234.533 0 0 0 9.132 7.16 1.884 1.884 0 0 1-.162 3.126 301.407 301.407 0 0 1-45.89 21.83 1.875 1.875 0 0 0-1 2.611 391.055 391.055 0 0 0 30.014 48.815 1.864 1.864 0 0 0 2.063.7A486.048 486.048 0 0 0 610.7 405.729a1.882 1.882 0 0 0 .765-1.352c12.264-126.783-20.532-236.912-86.934-334.541ZM222.491 337.58c-28.972 0-52.844-26.587-52.844-59.239s23.409-59.241 52.844-59.241c29.665 0 53.306 26.82 52.843 59.239 0 32.654-23.41 59.241-52.843 59.241Zm195.38 0c-28.971 0-52.843-26.587-52.843-59.239s23.409-59.241 52.843-59.241c29.667 0 53.307 26.82 52.844 59.239 0 32.654-23.177 59.241-52.844 59.241Z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/uv/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6zM286.2 404c11.1 0 20.1 9.1 20.1 20.3 0 11.3-9 20.4-20.1 20.4-11 0-20.1-9.2-20.1-20.4.1-11.3 9.1-20.3 20.1-20.3zM167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4zm-6.7-142.6c-11.1 0-20.1-9.1-20.1-20.3.1-11.3 9-20.4 20.1-20.4 11 0 20.1 9.2 20.1 20.4s-9 20.3-20.1 20.3z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/astral_sh" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8l164.9-188.5L26.8 48h145.6l100.5 132.9L389.2 48zm-24.8 373.8h39.1L151.1 88h-42l255.3 333.8z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.path", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.sections", "navigation.indexes", "navigation.tracking", "content.code.annotate", "toc.follow", "navigation.footer", "navigation.top", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+        <script src="../../js/extra.js"></script>
+      
+    
+  </body>
+</html>
