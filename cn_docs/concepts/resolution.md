@@ -1,168 +1,98 @@
-# Resolution
+# 解析
 
-Resolution is the process of taking a list of requirements and converting them to a list of package
-versions that fulfill the requirements. Resolution requires recursively searching for compatible
-versions of packages, ensuring that the requested requirements are fulfilled and that the
-requirements of the requested packages are compatible.
+解析是将需求列表转换为满足这些需求的包版本的过程。解析过程需要递归地搜索包的兼容版本，确保请求的需求得到满足，并且请求的包的需求相互兼容。
 
-## Dependencies
+## 依赖关系
 
-Most projects and packages have dependencies. Dependencies are other packages that are necessary in
-order for the current package to work. A package defines its dependencies as _requirements_, roughly
-a combination of a package name and acceptable versions. The dependencies defined by the current
-project are called _direct dependencies_. The dependencies added by each dependency of the current
-project are called _indirect_ or _transitive dependencies_.
+大多数项目和包都有依赖关系。依赖关系是当前包工作所必需的其他包。一个包将其依赖关系定义为 _需求_，大致是包名和可接受版本的组合。当前项目定义的依赖关系称为 _直接依赖_。当前项目每个依赖的依赖关系称为 _间接依赖_ 或 _传递依赖_。
 
-!!! note
+!!! 注意
 
-    See the [dependency specifiers
-    page](https://packaging.python.org/en/latest/specifications/dependency-specifiers/)
-    in the Python Packaging documentation for details about dependencies.
+    有关依赖关系的详细信息，请参见 [依赖关系说明符页面](https://hellowac.github.io/specifications/dependency-specifiers.html)（Python 打包文档）。
 
-## Basic examples
+## 基本示例
 
-To help demonstrate the resolution process, consider the following dependencies:
+为了帮助演示解析过程，考虑以下依赖关系：
 
 <!-- prettier-ignore -->
-- The project depends on `foo` and `bar`.
-- `foo` has one version, 1.0.0:
-    - `foo 1.0.0` depends on `lib>=1.0.0`.
-- `bar` has one version, 1.0.0:
-    - `bar 1.0.0` depends on `lib>=2.0.0`.
-- `lib` has two versions, 1.0.0 and 2.0.0. Both versions have no dependencies.
+- 项目依赖于 `foo` 和 `bar`。
+- `foo` 有一个版本，1.0.0：
+    - `foo 1.0.0` 依赖于 `lib>=1.0.0`。
+- `bar` 有一个版本，1.0.0：
+    - `bar 1.0.0` 依赖于 `lib>=2.0.0`。
+- `lib` 有两个版本，1.0.0 和 2.0.0。两个版本都没有依赖关系。
 
-In this example, the resolver must find a set of package versions which satisfies the project
-requirements. Since there is only one version of both `foo` and `bar`, those will be used. The
-resolution must also include the transitive dependencies, so a version of `lib` must be chosen.
-`foo 1.0.0` allows all available versions of `lib`, but `bar 1.0.0` requires `lib>=2.0.0` so
-`lib 2.0.0` must be used.
+在这个示例中，解析器必须找到一组包版本来满足项目需求。由于 `foo` 和 `bar` 都只有一个版本，因此将使用这些版本。解析还必须包括传递依赖关系，因此必须选择一个版本的 `lib`。`foo 1.0.0` 允许所有可用版本的 `lib`，但 `bar 1.0.0` 需要 `lib>=2.0.0`，因此必须使用 `lib 2.0.0`。
 
-In some resolutions, there may be more than one valid solution. Consider the following dependencies:
+在某些解析中，可能有多个有效的解决方案。考虑以下依赖关系：
 
 <!-- prettier-ignore -->
-- The project depends on `foo` and `bar`.
-- `foo` has two versions, 1.0.0 and 2.0.0:
-    - `foo 1.0.0` has no dependencies.
-    - `foo 2.0.0` depends on `lib==2.0.0`.
-- `bar` has two versions, 1.0.0 and 2.0.0:
-    - `bar 1.0.0` has no dependencies.
-    - `bar 2.0.0` depends on `lib==1.0.0`
-- `lib` has two versions, 1.0.0 and 2.0.0. Both versions have no dependencies.
+- 项目依赖于 `foo` 和 `bar`。
+- `foo` 有两个版本，1.0.0 和 2.0.0：
+    - `foo 1.0.0` 没有依赖关系。
+    - `foo 2.0.0` 依赖于 `lib==2.0.0`。
+- `bar` 有两个版本，1.0.0 和 2.0.0：
+    - `bar 1.0.0` 没有依赖关系。
+    - `bar 2.0.0` 依赖于 `lib==1.0.0`。
+- `lib` 有两个版本，1.0.0 和 2.0.0。两个版本都没有依赖关系。
 
-In this example, some version of both `foo` and `bar` must be selected; however, determining which
-version requires considering the dependencies of each version of `foo` and `bar`. `foo 2.0.0` and
-`bar 2.0.0` cannot be installed together as they conflict on their required version of `lib`, so the
-resolver must select either `foo 1.0.0` (along with `bar 2.0.0`) or `bar 1.0.0` (along with
-`foo 1.0.0`). Both are valid solutions, and different resolution algorithms may yield either result.
+在这个示例中，必须选择 `foo` 和 `bar` 的某个版本；然而，确定哪个版本需要考虑每个版本的 `foo` 和 `bar` 的依赖关系。由于 `foo 2.0.0` 和 `bar 2.0.0` 在其需要的 `lib` 版本上发生冲突，因此解析器必须选择 `foo 1.0.0`（与 `bar 2.0.0` 一起）或 `bar 1.0.0`（与 `foo 1.0.0` 一起）。这两者都是有效的解决方案，不同的解析算法可能会得出不同的结果。
 
-## Platform markers
+## 平台标记 {: #platform-markers}
 
-Markers allow attaching an expression to requirements that indicate when the dependency should be
-used. For example `bar ; python_version < "3.9"` indicates that `bar` should only be installed on
-Python 3.8 and earlier.
+标记允许将表达式附加到需求中，指示何时使用该依赖项。例如，`bar ; python_version < "3.9"` 表示 `bar` 仅应安装在 Python 3.8 及以下版本上。
 
-Markers are used to adjust a package's dependencies based on the current environment or platform.
-For example, markers can be used to modify dependencies by operating system, CPU architecture,
-Python version, Python implementation, and more.
+标记用于根据当前环境或平台调整包的依赖关系。例如，标记可以用于按操作系统、CPU 架构、Python 版本、Python 实现等来修改依赖关系。
 
-!!! note
+!!! 注意
 
-    See the [environment
-    markers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/#environment-markers)
-    section in the Python Packaging documentation for more details about markers.
+    有关标记的更多详细信息，请参见 [环境标记](https://hellowac.github.io/pypug-zh-cn/specifications/dependency-specifiers.html#id14)（Python 打包文档）。
 
-Markers are important for resolution because their values change the required dependencies.
-Typically, Python package resolvers use the markers of the _current_ platform to determine which
-dependencies to use since the package is often being _installed_ on the current platform. However,
-for _locking_ dependencies this is problematic — the lockfile would only work for developers using
-the same platform the lockfile was created on. To solve this problem, platform-independent, or
-"universal" resolvers exist.
+标记在解析中非常重要，因为它们的值会改变所需的依赖关系。通常，Python 包解析器使用 _当前_ 平台的标记来确定使用哪些依赖项，因为包通常是在当前平台上 _安装_ 的。然而，对于 _锁定_ 依赖关系来说，这就成了一个问题——锁定文件将仅适用于在创建锁定文件时使用相同平台的开发人员。为了解决这个问题，存在平台独立的或 "通用" 解析器。
 
-uv supports both [platform-specific](#platform-specific-resolution) and
-[universal](#universal-resolution) resolution.
+uv 支持 [平台特定解析](#platform-specific-resolution) 和 [通用解析](#universal-resolution)。
 
-## Universal resolution
+## 通用解析 {: #universal-resolution}
 
-uv's lockfile (`uv.lock`) is created with a universal resolution and is portable across platforms.
-This ensures that dependencies are locked for everyone working on the project, regardless of
-operating system, architecture, and Python version. The uv lockfile is created and modified by
-[project](../concepts/projects/index.md) commands such as `uv lock`, `uv sync`, and `uv add`.
+uv 的锁定文件（`uv.lock`）使用通用解析创建，并且可以跨平台移植。这确保了无论操作系统、架构和 Python 版本如何，项目中所有工作的人都能确保依赖关系已被锁定。uv 锁定文件是通过 [项目](../concepts/projects/index.md) 命令（如 `uv lock`、`uv sync` 和 `uv add`）创建和修改的。
 
-universal resolution is also available in uv's pip interface, i.e.,
-[`uv pip compile`](../pip/compile.md), with the `--universal` flag. The resulting requirements file
-will contain markers to indicate which platform each dependency is relevant for.
+通用解析也可以通过 uv 的 pip 接口使用，即使用 `--universal` 标志的 [`uv pip compile`](../pip/compile.md)。生成的需求文件将包含标记，以指示每个依赖项适用于哪个平台。
 
-During universal resolution, a package may be listed multiple times with different versions or URLs
-if different versions are needed for different platforms — the markers determine which version will
-be used. A universal resolution is often more constrained than a platform-specific resolution, since
-we need to take the requirements for all markers into account.
+在通用解析过程中，如果不同平台需要不同版本的包，则同一个包可能会列出多个不同版本或 URL —— 标记将决定使用哪个版本。与平台特定解析相比，通用解析通常会更受限，因为我们需要考虑所有标记的需求。
 
-During universal resolution, a minimum Python version must be specified. Project commands read the
-minimum required version from `project.requires-python` in the `pyproject.toml`. When using uv's pip
-interface, provide a value with the `--python-version` option; otherwise, the current Python version
-will be treated as a lower bound. For example, `--universal --python-version 3.9` performs a
-universal resolution for Python 3.9 and later.
+在通用解析过程中，必须指定一个最低的 Python 版本。项目命令会从 `pyproject.toml` 中的 `project.requires-python` 获取最低要求的版本。当使用 uv 的 pip 接口时，使用 `--python-version` 选项提供版本值；否则，当前的 Python 版本将作为下限。例如，`--universal --python-version 3.9` 会执行适用于 Python 3.9 及以上版本的通用解析。
 
-During universal resolution, all selected dependency versions must be compatible with the _entire_
-`requires-python` range declared in the `pyproject.toml`. For example, if a project's
-`requires-python` is `>=3.8`, then uv will not allow _any_ dependency versions that are limited to,
-e.g., Python 3.9 and later, as they are not compatible with Python 3.8, the lower bound of the
-project's supported range. In other words, the project's `requires-python` must be a subset of the
-`requires-python` of all its dependencies.
+在通用解析过程中，所有选定的依赖版本必须与 `pyproject.toml` 中声明的 _整个_ `requires-python` 范围兼容。例如，如果项目的 `requires-python` 是 `>=3.8`，则 uv 不允许任何版本的依赖项为仅支持 Python 3.9 或更高版本的依赖项，因为它们与 Python 3.8（项目支持范围的下限）不兼容。换句话说，项目的 `requires-python` 必须是所有依赖项的 `requires-python` 的子集。
 
-When evaluating `requires-python` ranges for dependencies, uv only considers lower bounds and
-ignores upper bounds entirely. For example, `>=3.8, <4` is treated as `>=3.8`.
+在评估依赖项的 `requires-python` 范围时，uv 只考虑下限，完全忽略上限。例如，`>=3.8, <4` 会被视为 `>=3.8`。
 
-## Platform-specific resolution
+## 平台特定解析 {: #platform-specific-resolution}
 
-By default, uv's pip interface, i.e., [`uv pip compile`](../pip/compile.md), produces a resolution
-that is platform-specific, like `pip-tools`. There is no way to use platform-specific resolution in
-the uv's project interface.
+默认情况下，uv 的 pip 接口（即 [`uv pip compile`](../pip/compile.md)）会生成平台特定的解析，类似于 `pip-tools`。在 uv 的项目接口中无法使用平台特定解析。
 
-uv also supports resolving for specific, alternate platforms and Python versions with the
-`--python-platform` and `--python-version` options. For example, if using Python 3.12 on macOS,
-`uv pip compile --python-platform linux --python-version 3.10 requirements.in` can be used to
-produce a resolution for Python 3.10 on Linux instead. Unlike universal resolution, during
-platform-specific resolution, the provided `--python-version` is the exact python version to use,
-not a lower bound.
+uv 还支持使用 `--python-platform` 和 `--python-version` 选项为特定的替代平台和 Python 版本进行解析。例如，如果在 macOS 上使用 Python 3.12，`uv pip compile --python-platform linux --python-version 3.10 requirements.in` 可以用来生成适用于 Linux 上 Python 3.10 的解析。与通用解析不同，在平台特定解析过程中，提供的 `--python-version` 是要使用的确切 Python 版本，而不是下限。
 
-!!! note
+!!! 注意
 
-    Python's environment markers expose far more information about the current machine
-    than can be expressed by a simple `--python-platform` argument. For example, the `platform_version` marker
-    on macOS includes the time at which the kernel was built, which can (in theory) be encoded in
-    package requirements. uv's resolver makes a best-effort attempt to generate a resolution that is
-    compatible with any machine running on the target `--python-platform`, which should be sufficient for
-    most use cases, but may lose fidelity for complex package and platform combinations.
+    Python 的环境标记提供了比简单的 `--python-platform` 参数更多的关于当前机器的信息。例如，macOS 上的 `platform_version` 标记包含了内核构建的时间，这理论上可以在包的需求中进行编码。uv 的解析器会尽最大努力生成与在目标 `--python-platform` 上运行的任何机器兼容的解析，这对于大多数用例来说应该是足够的，但对于复杂的包和平台组合，可能会失去一些精度。
 
-## Dependency preferences
+## 依赖偏好
 
-If resolution output file exists, i.e. a uv lockfile (`uv.lock`) or a requirements output file
-(`requirements.txt`), uv will _prefer_ the dependency versions listed there. Similarly, if
-installing a package into a virtual environment, uv will prefer the already installed version if
-present. This means that locked or installed versions will not change unless an incompatible version
-is requested or an upgrade is explicitly requested with `--upgrade`.
+如果解析输出文件存在，即 uv 锁定文件（`uv.lock`）或需求输出文件（`requirements.txt`），uv 会 _优先_ 使用列出的依赖版本。同样，如果将包安装到虚拟环境中，uv 会优先使用已安装的版本（如果存在）。这意味着，除非请求了不兼容的版本，或者显式使用 `--upgrade` 请求了升级，否则已锁定或已安装的版本不会更改。
 
-## Resolution strategy
+## 解析策略 {: #resolution-strategy}
 
-By default, uv tries to use the latest version of each package. For example,
-`uv pip install flask>=2.0.0` will install the latest version of Flask, e.g., 3.0.0. If
-`flask>=2.0.0` is a dependency of the project, only `flask` 3.0.0 will be used. This is important,
-for example, because running tests will not check that the project is actually compatible with its
-stated lower bound of `flask` 2.0.0.
+默认情况下，uv 会尝试使用每个包的最新版本。例如，`uv pip install flask>=2.0.0` 会安装 Flask 的最新版本，例如 3.0.0。如果 `flask>=2.0.0` 是项目的依赖项，那么只会使用 `flask` 3.0.0。这个很重要，例如，因为运行测试时不会检查项目是否实际与其声明的 `flask` 2.0.0 的下限兼容。
 
-With `--resolution lowest`, uv will install the lowest possible version for all dependencies, both
-direct and indirect (transitive). Alternatively, `--resolution lowest-direct` will use the lowest
-compatible versions for all direct dependencies, while using the latest compatible versions for all
-other dependencies. uv will always use the latest versions for build dependencies.
+使用 `--resolution lowest`，uv 会安装所有依赖项（包括直接和间接依赖）的最低可能版本。或者，`--resolution lowest-direct` 会使用所有直接依赖的最低兼容版本，同时使用所有其他依赖的最新兼容版本。uv 会始终使用最新版本的构建依赖项。
 
-For example, given the following `requirements.in` file:
+例如，给定以下的 `requirements.in` 文件：
 
 ```python title="requirements.in"
 flask>=2.0.0
 ```
 
-Running `uv pip compile requirements.in` would produce the following `requirements.txt` file:
+运行 `uv pip compile requirements.in` 会生成以下的 `requirements.txt` 文件：
 
 ```python title="requirements.txt"
 # This file was autogenerated by uv via the following command:
@@ -184,7 +114,7 @@ werkzeug==3.0.1
     # via flask
 ```
 
-However, `uv pip compile --resolution lowest requirements.in` would instead produce:
+然而，运行 `uv pip compile --resolution lowest requirements.in` 会生成如下的内容：
 
 ```python title="requirements.in"
 # This file was autogenerated by uv via the following command:
@@ -202,93 +132,52 @@ werkzeug==2.0.0
     # via flask
 ```
 
-When publishing libraries, it is recommended to separately run tests with `--resolution lowest` or
-`--resolution lowest-direct` in continuous integration to ensure compatibility with the declared
-lower bounds.
+在发布库时，建议在持续集成中分别使用 `--resolution lowest` 或 `--resolution lowest-direct` 运行测试，以确保与声明的下限兼容。
 
-## Pre-release handling
+## 预发布版本处理
 
-By default, uv will accept pre-release versions during dependency resolution in two cases:
+默认情况下，uv 在依赖解析过程中会接受预发布版本，以下两种情况除外：
 
-1. If the package is a direct dependency, and its version specifiers include a pre-release specifier
-   (e.g., `flask>=2.0.0rc1`).
-1. If _all_ published versions of a package are pre-releases.
+1. 如果包是直接依赖，并且其版本说明符包括预发布说明符（例如，`flask>=2.0.0rc1`）。
+2. 如果包的所有发布版本都是预发布版本。
 
-If dependency resolution fails due to a transitive pre-release, uv will prompt use of
-`--prerelease allow` to allow pre-releases for all dependencies.
+如果由于传递的预发布版本导致依赖解析失败，uv 会提示使用 `--prerelease allow` 来允许所有依赖项使用预发布版本。
 
-Alternatively, the transitive dependency can be added as a [constraint](#dependency-constraints) or
-direct dependency (i.e. in `requirements.in` or `pyproject.toml`) with a pre-release version
-specifier (e.g., `flask>=2.0.0rc1`) to opt-in to pre-release support for that specific dependency.
+另外，可以将传递依赖项作为 [约束](#dependency-constraints) 或直接依赖项（即在 `requirements.in` 或 `pyproject.toml` 中）添加，并指定一个预发布版本说明符（例如，`flask>=2.0.0rc1`），以选择性地支持该特定依赖项的预发布版本。
 
-Pre-releases are
-[notoriously difficult](https://pubgrub-rs-guide.netlify.app/limitations/prerelease_versions) to
-model, and are a frequent source of bugs in other packaging tools. uv's pre-release handling is
-_intentionally_ limited and requires user opt-in for pre-releases to ensure correctness.
+预发布版本通常是[难以建模的](https://pubgrub-rs-guide.netlify.app/limitations/prerelease_versions)，并且是其他打包工具中常见的错误源。uv 的预发布版本处理是 _故意_ 限制的，并且要求用户选择加入预发布版本支持，以确保正确性。
 
-For more details, see
-[Pre-release compatibility](../pip/compatibility.md#pre-release-compatibility).
+有关详细信息，请参阅 [预发布版本兼容性](../pip/compatibility.md#pre-release-compatibility)。
 
-## Dependency constraints
+## 依赖约束 {: #dependency-constraints}
 
-Like pip, uv supports constraint files (`--constraint constraints.txt`) which narrow the set of
-acceptable versions for the given packages. Constraint files are similar to requirements files, but
-being listed as a constraint alone will not cause a package to be included to the resolution.
-Instead, constraints only take effect if a requested package is already pulled in as a direct or
-transitive dependency. Constraints are useful for reducing the range of available versions for a
-transitive dependency. They can also be used to keep a resolution in sync with some other set of
-resolved versions, regardless of which packages are overlapping between the two.
+与 pip 类似，uv 支持约束文件（`--constraint constraints.txt`），用于缩小给定包的可接受版本范围。约束文件类似于需求文件，但单独列出作为约束不会导致包包含在解析中。相反，只有在请求的包已作为直接或传递依赖项被拉入时，约束才会生效。约束对于减少传递依赖项的可用版本范围非常有用。它们还可以用于将解析与某个已解决版本的集合保持同步，无论两个集合之间哪些包是重叠的。
 
-## Dependency overrides
+## 依赖覆盖
 
-Dependency overrides allow bypassing unsuccessful or undesirable resolutions by overriding a
-package's declared dependencies. Overrides are a useful last resort for cases in which you _know_
-that a dependency is compatible with a certain version of a package, despite the metadata indicating
-otherwise.
+依赖覆盖允许通过覆盖包声明的依赖项来绕过不成功或不希望的解析。覆盖是一个有用的最后手段，适用于你 _知道_ 某个依赖项与特定版本的包兼容，尽管元数据显示相反的情况。
 
-For example, if a transitive dependency declares the requirement `pydantic>=1.0,<2.0`, but _does_
-work with `pydantic>=2.0`, the user can override the declared dependency by including
-`pydantic>=1.0,<3` in the overrides, thereby allowing the resolver to choose a newer version of
-`pydantic`.
+例如，如果一个传递依赖项声明了 `pydantic>=1.0,<2.0` 的要求，但 _确实_ 与 `pydantic>=2.0` 兼容，用户可以通过在覆盖项中包含 `pydantic>=1.0,<3` 来覆盖声明的依赖项，从而允许解析器选择一个更新版本的 `pydantic`。
 
-Concretely, if `pydantic>=1.0,<3` is included as an override, uv will ignore all declared
-requirements on `pydantic`, replacing them with the override. In the above example, the
-`pydantic>=1.0,<2.0` requirement would be ignored completely, and would instead be replaced with
-`pydantic>=1.0,<3`.
+具体来说，如果将 `pydantic>=1.0,<3` 包含在覆盖项中，uv 会忽略所有关于 `pydantic` 的声明要求，而用覆盖项替换它们。在上面的例子中，`pydantic>=1.0,<2.0` 的要求将完全被忽略，取而代之的是 `pydantic>=1.0,<3`。
 
-While constraints can only _reduce_ the set of acceptable versions for a package, overrides can
-_expand_ the set of acceptable versions, providing an escape hatch for erroneous upper version
-bounds. As with constraints, overrides do not add a dependency on the package and only take effect
-if the package is requested in a direct or transitive dependency.
+尽管约束只能 _缩小_ 包的可接受版本范围，但覆盖项可以 _扩大_ 可接受版本的范围，提供了一个逃逸机制，用于处理错误的版本上限。与约束一样，覆盖项不会添加对包的依赖，只有在该包作为直接或传递依赖项请求时才会生效。
 
-In a `pyproject.toml`, use `tool.uv.override-dependencies` to define a list of overrides. In the
-pip-compatible interface, the `--override` option can be used to pass files with the same format as
-constraints files.
+在 `pyproject.toml` 中，使用 `tool.uv.override-dependencies` 来定义覆盖项列表。在与 pip 兼容的接口中，可以使用 `--override` 选项来传递与约束文件格式相同的文件。
 
-If multiple overrides are provided for the same package, they must be differentiated with
-[markers](#platform-markers). If a package has a dependency with a marker, it is replaced
-unconditionally when using overrides — it does not matter if the marker evaluates to true or false.
+如果为同一个包提供多个覆盖项，它们必须通过 [标记](#platform-markers) 来区分。如果包有一个带有标记的依赖项，则在使用覆盖项时会无条件替换它 —— 无论标记是否为真。
 
-## Dependency metadata
+## 依赖元数据
 
-During resolution, uv needs to resolve the metadata for each package it encounters, in order to
-determine its dependencies. This metadata is often available as a static file in the package index;
-however, for packages that only provide source distributions, the metadata may not be available
-upfront.
+在解析过程中，uv 需要解析它遇到的每个包的元数据，以便确定其依赖项。这些元数据通常作为静态文件在包索引中提供；然而，对于只提供源代码分发包的包，元数据可能无法预先获取。
 
-In such cases, uv has to build the package to determine its metadata (e.g., by invoking `setup.py`).
-This can introduce a performance penalty during resolution. Further, it imposes the requirement that
-the package can be built on all platforms, which may not be true.
+在这种情况下，uv 必须构建该包以确定其元数据（例如，通过调用 `setup.py`）。这可能会在解析过程中引入性能开销。此外，它还要求该包能够在所有平台上构建，这可能并不总是成立。
 
-For example, you may have a package that should only be built and installed on Linux, but doesn't
-build successfully on macOS or Windows. While uv can construct a perfectly valid lockfile for this
-scenario, doing so would require building the package, which would fail on non-Linux platforms.
+例如，你可能有一个只应在 Linux 上构建和安装的包，但它无法在 macOS 或 Windows 上成功构建。虽然 uv 可以为此场景构建一个完全有效的锁定文件，但这样做会要求构建该包，而这在非 Linux 平台上会失败。
 
-The `tool.uv.dependency-metadata` table can be used to provide static metadata for such dependencies
-upfront, thereby allowing uv to skip the build step and use the provided metadata instead.
+`tool.uv.dependency-metadata` 表可以用来为这些依赖项提前提供静态元数据，从而允许 uv 跳过构建步骤并使用提供的元数据。
 
-For example, to provide metadata for `chumpy` upfront, include its `dependency-metadata` in the
-`pyproject.toml`:
+例如，要为 `chumpy` 提供元数据，可以在 `pyproject.toml` 中包含其 `dependency-metadata`：
 
 ```toml
 [[tool.uv.dependency-metadata]]
@@ -297,13 +186,9 @@ version = "0.70"
 requires-dist = ["numpy>=1.8.1", "scipy>=0.13.0", "six>=1.11.0"]
 ```
 
-These declarations are intended for cases in which a package does _not_ declare static metadata
-upfront, though they are also useful for packages that require disabling build isolation. In such
-cases, it may be easier to declare the package metadata upfront, rather than creating a custom build
-environment prior to resolving the package.
+这些声明适用于那些未 _声明_ 静态元数据的包，尽管它们对于需要禁用构建隔离的包也很有用。在这种情况下，提前声明包的元数据可能比在解析包之前创建自定义构建环境更容易。
 
-For example, you can declare the metadata for `flash-attn`, allowing uv to resolve without building
-the package from source (which itself requires installing `torch`):
+例如，可以声明 `flash-attn` 的元数据，允许 uv 在不从源代码构建包的情况下进行解析（这本身需要安装 `torch`）：
 
 ```toml
 [project]
@@ -321,74 +206,37 @@ version = "2.6.3"
 requires-dist = ["torch", "einops"]
 ```
 
-Like dependency overrides, `tool.uv.dependency-metadata` can also be used for cases in which a
-package's metadata is incorrect or incomplete, or when a package is not available in the package
-index. While dependency overrides allow overriding the allowed versions of a package globally,
-metadata overrides allow overriding the declared metadata of a _specific package_.
+与依赖覆盖一样，`tool.uv.dependency-metadata` 也可以用于包的元数据不正确或不完整的情况，或当包在包索引中不可用时。虽然依赖覆盖允许全局覆盖包的允许版本，元数据覆盖则允许覆盖 _特定包_ 的声明元数据。
+
+!!! noe
+
+    对于基于注册表的依赖项，`tool.uv.dependency-metadata` 中的 `version` 字段是可选的（如果省略，uv 将假定元数据适用于该包的所有版本），但对于直接 URL 依赖项（如 Git 依赖项）则 _是必需的_。
+
+`tool.uv.dependency-metadata` 表中的条目遵循 [Metadata 2.3](https://hellowac.github.io/pypug-zh-cn/specifications/core-metadata.html) 规范，尽管 uv 仅读取 `name`、`version`、`requires-dist`、`requires-python` 和 `provides-extra` 字段。`version` 字段也是可选的。如果省略，元数据将适用于指定包的所有版本。
+
+## 下限
+
+默认情况下，`uv add` 会为依赖项添加下限，并且在使用 uv 管理项目时，如果直接依赖项没有下限，uv 会发出警告。
+
+下限在“正常路径”中并不是至关重要，但在依赖冲突的情况下，它们非常重要。例如，考虑一个项目，它需要两个包，而这两个包之间存在冲突的依赖关系。解析器需要检查这两个包的所有版本组合，如果它们之间都存在冲突，则会报告错误，因为依赖项无法满足。如果没有下限，解析器可以（并且通常会）回溯到包的最旧版本。这不仅仅是因为这样做会变慢，旧版本的包往往无法构建，或者解析器可能会选择一个足够旧的版本，导致它不再依赖于冲突的包，但同时也无法与您的代码兼容。
+
+在编写库时，下限特别关键。声明您的库支持的每个依赖项的最低版本，并验证这些版本的范围是否正确——可以通过测试 [`--resolution lowest` 或 `--resolution lowest-direct`](#resolution-strategy) 来完成。否则，用户可能会获得一个不兼容的旧版本库依赖项，并导致库出现意外的错误。
+
+## 可复现的解析
+
+uv 支持 `--exclude-newer` 选项，可以限制解析仅限于在特定日期之前发布的分发包，从而确保安装可复现，避免新包发布的影响。日期可以指定为 [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339.html) 时间戳（例如，`2006-12-02T02:07:43Z`）或本地日期，格式相同（例如，`2006-12-02`），并使用系统配置的时区。
+
+需要注意的是，包索引必须支持 `upload-time` 字段，具体说明见 [`PEP 700`](https://peps.python.org/pep-0700/)。如果给定分发包没有此字段，该分发包将被视为不可用。PyPI 为所有包提供了 `upload-time` 字段。
+
+为了确保可复现性，无法满足的解析错误信息不会提及因 `--exclude-newer` 标志而排除的分发包——新发布的分发包将被视为不存在。
 
 !!! note
 
-    The `version` field in `tool.uv.dependency-metadata` is optional for registry-based
-    dependencies (when omitted, uv will assume the metadata applies to all versions of the package),
-    but _required_ for direct URL dependencies (like Git dependencies).
+    `--exclude-newer` 选项仅适用于从注册表中读取的包（例如 Git 依赖项除外）。此外，在使用 `uv pip` 接口时，uv 不会降级已安装的包，除非提供了 `--reinstall` 标志，在这种情况下，uv 将进行新的解析。
 
-Entries in the `tool.uv.dependency-metadata` table follow the
-[Metadata 2.3](https://packaging.python.org/en/latest/specifications/core-metadata/) specification,
-though only `name`, `version`, `requires-dist`, `requires-python`, and `provides-extra` are read by
-uv. The `version` field is also considered optional. If omitted, the metadata will be used for all
-versions of the specified package.
+## 源代码分发 {: #source-distribution}
 
-## Lower bounds
-
-By default, `uv add` adds lower bounds to dependencies and, when using uv to manage projects, uv
-will warn if direct dependencies don't have lower bound.
-
-Lower bounds are not critical in the "happy path", but they are important for cases where there are
-dependency conflicts. For example, consider a project that requires two packages and those packages
-have conflicting dependencies. The resolver needs to check all combinations of all versions within
-the constraints for the two packages — if all of them conflict, an error is reported because the
-dependencies are not satisfiable. If there are no lower bounds, the resolver can (and often will)
-backtrack down to the oldest version of a package. This isn't only problematic because it's slow,
-the old version of the package often fails to build, or the resolver can end up picking a version
-that's old enough that it doesn't depend on the conflicting package, but also doesn't work with your
-code.
-
-Lower bounds are particularly critical when writing a library. It's important to declare the lowest
-version for each dependency that your library works with, and to validate that the bounds are
-correct — testing with
-[`--resolution lowest` or `--resolution lowest-direct`](#resolution-strategy). Otherwise, a user may
-receive an old, incompatible version of one of your library's dependencies and the library will fail
-with an unexpected error.
-
-## Reproducible resolutions
-
-uv supports an `--exclude-newer` option to limit resolution to distributions published before a
-specific date, allowing reproduction of installations regardless of new package releases. The date
-may be specified as an [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339.html) timestamp (e.g.,
-`2006-12-02T02:07:43Z`) or a local date in the same format (e.g., `2006-12-02`) in your system's
-configured time zone.
-
-Note the package index must support the `upload-time` field as specified in
-[`PEP 700`](https://peps.python.org/pep-0700/). If the field is not present for a given
-distribution, the distribution will be treated as unavailable. PyPI provides `upload-time` for all
-packages.
-
-To ensure reproducibility, messages for unsatisfiable resolutions will not mention that
-distributions were excluded due to the `--exclude-newer` flag — newer distributions will be treated
-as if they do not exist.
-
-!!! note
-
-    The `--exclude-newer` option is only applied to packages that are read from a registry (as opposed to, e.g., Git
-    dependencies). Further, when using the `uv pip` interface, uv will not downgrade previously installed packages
-    unless the `--reinstall` flag is provided, in which case uv will perform a new resolution.
-
-## Source distribution
-
-[PEP 625](https://peps.python.org/pep-0625/) specifies that packages must distribute source
-distributions as gzip tarball (`.tar.gz`) archives. Prior to this specification, other archive
-formats, which need to be supported for backward compatibility, were also allowed. uv supports
-reading and extracting archives in the following formats:
+[PEP 625](https://peps.python.org/pep-0625/) 规定包必须以 gzip tarball（`.tar.gz`）格式分发源代码包。在此规范之前，其他归档格式也被允许，为了向后兼容，uv 支持读取并解压以下格式的归档文件：
 
 - gzip tarball (`.tar.gz`, `.tgz`)
 - bzip2 tarball (`.tar.bz2`, `.tbz`)
@@ -398,25 +246,16 @@ reading and extracting archives in the following formats:
 - lzma tarball (`.tar.lzma`)
 - zip (`.zip`)
 
-## Learn more
+## 了解更多
 
-For more details about the internals of the resolver, see the
-[resolver reference](../reference/resolver-internals.md) documentation.
+有关解析器内部机制的更多详细信息，请参见 [解析器参考](../reference/resolver-internals.md) 文档。
 
-## Lockfile versioning
+## 锁定文件版本控制 {: #lockfile-versioning}
 
-The `uv.lock` file uses a versioned schema. The schema version is included in the `version` field of
-the lockfile.
+`uv.lock` 文件使用版本化的模式。模式版本包含在锁定文件的 `version` 字段中。
 
-Any given version of uv can read and write lockfiles with the same schema version, but will reject
-lockfiles with a greater schema version. For example, if your uv version supports schema v1,
-`uv lock` will error if it encounters an existing lockfile with schema v2.
+任何给定版本的 uv 都可以读取和写入与其相同模式版本的锁定文件，但会拒绝更高模式版本的锁定文件。例如，如果您的 uv 版本支持模式 v1，当它遇到模式为 v2 的现有锁定文件时，`uv lock` 会报错。
 
-uv versions that support schema v2 _may_ be able to read lockfiles with schema v1 if the schema
-update was backwards-compatible. However, this is not guaranteed, and uv may exit with an error if
-it encounters a lockfile with an outdated schema version.
+支持模式 v2 的 uv 版本 _可能_ 能够读取模式 v1 的锁定文件，如果模式更新是向后兼容的。但是，这并不能保证，如果遇到过时的模式版本的锁定文件，uv 可能会退出并报错。
 
-The schema version is considered part of the public API, and so is only bumped in minor releases, as
-a breaking change (see [Versioning](../reference/versioning.md)). As such, all uv patch versions
-within a given minor uv release are guaranteed to have full lockfile compatibility. In other words,
-lockfiles may only be rejected across minor releases.
+模式版本被视为公共 API 的一部分，因此只有在次要版本更新时才会增加（请参阅 [版本控制](../reference/versioning.md)）。因此，在给定的次要 uv 版本中，所有 uv 修补版本都保证具有完全的锁定文件兼容性。换句话说，锁定文件只会在次要版本之间被拒绝。

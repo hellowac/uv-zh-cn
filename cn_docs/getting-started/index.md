@@ -1,14 +1,14 @@
-# Getting started
+# 入门指南
 
-To help you get started with uv, we'll cover a few important topics:
+为了帮助您快速上手 uv，我们将介绍几个重要主题：
 
-- [Installing uv](./installation.md)
-- [First steps after installation](./first-steps.md)
-- [An overview of uv's features](./features.md)
-- [How to get help](./help.md)
+- [安装 uv](./installation.md)  
+- [安装后的第一步](./first-steps.md)  
+- [uv 功能概览](./features.md)  
+- [如何获取帮助](./help.md)  
 
-Read on, or jump ahead to another section:
+继续阅读，或者直接跳转到其他部分：
 
-- Get going quickly with [guides](../guides/index.md) for common workflows.
-- Learn more about the core [concepts](../concepts/index.md) in uv.
-- Use the [reference](../reference/index.md) documentation to find details about something specific.
+- 通过 [指南](../guides/index.md) 快速了解常见工作流程。  
+- 学习 uv 的核心 [概念](../concepts/index.md)。  
+- 使用 [参考文档](../reference/index.md) 查找具体内容的详细信息。  

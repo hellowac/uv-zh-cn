@@ -1,100 +1,72 @@
-# Authentication
+# 身份验证
 
-## Git authentication
+## Git 身份验证 {: #git-authentication}
 
-uv allows packages to be installed from Git and supports the following schemes for authenticating
-with private repositories.
+uv 允许从 Git 安装包，并支持以下方案来认证与私有仓库的连接。
 
-Using SSH:
+使用 SSH：
 
-- `git+ssh://git@<hostname>/...` (e.g. `git+ssh://git@github.com/astral-sh/uv`)
-- `git+ssh://git@<host>/...` (e.g. `git+ssh://git@github.com-key-2/astral-sh/uv`)
+- `git+ssh://git@<hostname>/...`（例如 `git+ssh://git@github.com/astral-sh/uv`）
+- `git+ssh://git@<host>/...`（例如 `git+ssh://git@github.com-key-2/astral-sh/uv`）
 
-See the
-[GitHub SSH documentation](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/about-ssh)
-for more details on how to configure SSH.
+有关如何配置 SSH，请参阅 [GitHub SSH 文档](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/about-ssh)。
 
-Using a password or token:
+使用密码或令牌：
 
-- `git+https://<user>:<token>@<hostname>/...` (e.g.
-  `git+https://git:github_pat_asdf@github.com/astral-sh/uv`)
-- `git+https://<token>@<hostname>/...` (e.g. `git+https://github_pat_asdf@github.com/astral-sh/uv`)
-- `git+https://<user>@<hostname>/...` (e.g. `git+https://git@github.com/astral-sh/uv`)
+- `git+https://<user>:<token>@<hostname>/...`（例如 `git+https://git:github_pat_asdf@github.com/astral-sh/uv`）
+- `git+https://<token>@<hostname>/...`（例如 `git+https://github_pat_asdf@github.com/astral-sh/uv`）
+- `git+https://<user>@<hostname>/...`（例如 `git+https://git@github.com/astral-sh/uv`）
 
-When using a GitHub personal access token, the username is arbitrary. GitHub does not support
-logging in with password directly, although other hosts may. If a username is provided without
-credentials, you will be prompted to enter them.
+当使用 GitHub 个人访问令牌时，用户名是任意的。GitHub 不支持直接使用密码登录，尽管其他主机可能支持。如果提供了用户名但没有凭证，您将被提示输入凭证。
 
-If there are no credentials present in the URL and authentication is needed, the
-[Git credential helper](https://git-scm.com/doc/credential-helpers) will be queried.
+如果 URL 中没有凭证且需要身份验证，将会查询 [Git 凭证助手](https://git-scm.com/doc/credential-helpers)。
 
-## HTTP authentication
+## HTTP 身份验证
 
-uv supports credentials over HTTP when querying package registries.
+uv 支持在查询包注册表时通过 HTTP 提供凭证。
 
-Authentication can come from the following sources, in order of precedence:
+身份验证可以通过以下来源进行，按优先级顺序排列：
 
-- The URL, e.g., `https://<user>:<password>@<hostname>/...`
-- A [`.netrc`](https://everything.curl.dev/usingcurl/netrc) configuration file
-- A [keyring](https://github.com/jaraco/keyring) provider (requires opt-in)
+- URL，例如 `https://<user>:<password>@<hostname>/...`
+- 一个 [`.netrc`](https://everything.curl.dev/usingcurl/netrc) 配置文件
+- 一个 [keyring](https://github.com/jaraco/keyring) 提供者（需要选择加入）
 
-If authentication is found for a single net location (scheme, host, and port), it will be cached for
-the duration of the command and used for other queries to that net location. Authentication is not
-cached across invocations of uv.
+如果为单一网络位置（方案、主机和端口）找到身份验证，它将在命令期间缓存并用于该网络位置的其他查询。身份验证不会在 uv 的调用之间缓存。
 
-`.netrc` authentication is enabled by default, and will respect the `NETRC` environment variable if
-defined, falling back to `~/.netrc` if not.
+`.netrc` 身份验证默认启用，如果定义了 `NETRC` 环境变量，它将被尊重，未定义时会回退到 `~/.netrc`。
 
-To enable keyring-based authentication, pass the `--keyring-provider subprocess` command-line
-argument to uv, or set `UV_KEYRING_PROVIDER=subprocess`.
+要启用基于 keyring 的身份验证，请将 `--keyring-provider subprocess` 命令行参数传递给 uv，或设置 `UV_KEYRING_PROVIDER=subprocess`。
 
-Authentication may be used for hosts specified in the following contexts:
+身份验证可用于以下上下文中指定的主机：
 
 - `index-url`
 - `extra-index-url`
 - `find-links`
 - `package @ https://...`
 
-See the [`pip` compatibility guide](../pip/compatibility.md#registry-authentication) for details on
-differences from `pip`.
+有关与 `pip` 的差异，请参阅 [`pip` 兼容性指南](../pip/compatibility.md#registry-authentication)。
 
-## Custom CA certificates
+## 自定义 CA 证书
 
-By default, uv loads certificates from the bundled `webpki-roots` crate. The `webpki-roots` are a
-reliable set of trust roots from Mozilla, and including them in uv improves portability and
-performance (especially on macOS, where reading the system trust store incurs a significant delay).
+默认情况下，uv 从捆绑的 `webpki-roots` crate 加载证书。`webpki-roots` 是来自 Mozilla 的一组可靠的信任根，将它们包括在 uv 中可以提高可移植性和性能（特别是在 macOS 上，读取系统信任存储会导致显著的延迟）。
 
-However, in some cases, you may want to use the platform's native certificate store, especially if
-you're relying on a corporate trust root (e.g., for a mandatory proxy) that's included in your
-system's certificate store. To instruct uv to use the system's trust store, run uv with the
-`--native-tls` command-line flag, or set the `UV_NATIVE_TLS` environment variable to `true`.
+然而，在某些情况下，您可能希望使用平台的本地证书存储，特别是如果您依赖于一个企业信任根（例如，用于强制代理的根证书），该证书包含在系统的证书存储中。要指示 uv 使用系统的信任存储，请使用 `--native-tls` 命令行标志，或将 `UV_NATIVE_TLS` 环境变量设置为 `true`。
 
-If a direct path to the certificate is required (e.g., in CI), set the `SSL_CERT_FILE` environment
-variable to the path of the certificate bundle, to instruct uv to use that file instead of the
-system's trust store.
+如果需要证书的直接路径（例如，在 CI 中），请设置 `SSL_CERT_FILE` 环境变量为证书捆绑文件的路径，以指示 uv 使用该文件而非系统的信任存储。
 
-If client certificate authentication (mTLS) is desired, set the `SSL_CLIENT_CERT` environment
-variable to the path of the PEM formatted file containing the certificate followed by the private
-key.
+如果需要客户端证书认证（mTLS），请将 `SSL_CLIENT_CERT` 环境变量设置为包含证书及其私钥的 PEM 格式文件的路径。
 
-Finally, if you're using a setup in which you want to trust a self-signed certificate or otherwise
-disable certificate verification, you can instruct uv to allow insecure connections to dedicated
-hosts via the `allow-insecure-host` configuration option. For example, adding the following to
-`pyproject.toml` will allow insecure connections to `example.com`:
+最后，如果您正在使用一个环境，在该环境中希望信任自签名证书或以其他方式禁用证书验证，可以通过 `allow-insecure-host` 配置选项指示 uv 允许连接到特定的主机，即使这些连接不安全。例如，向 `pyproject.toml` 添加以下内容将允许连接到 `example.com` 的不安全连接：
 
 ```toml
 [tool.uv]
 allow-insecure-host = ["example.com"]
 ```
 
-`allow-insecure-host` expects to receive a hostname (e.g., `localhost`) or hostname-port pair (e.g.,
-`localhost:8080`), and is only applicable to HTTPS connections, as HTTP connections are inherently
-insecure.
+`allow-insecure-host` 期望接收一个主机名（例如 `localhost`）或主机名-端口对（例如 `localhost:8080`），并且仅适用于 HTTPS 连接，因为 HTTP 连接本身是不安全的。
 
-Use `allow-insecure-host` with caution and only in trusted environments, as it can expose you to
-security risks due to the lack of certificate verification.
+使用 `allow-insecure-host` 时请谨慎，并仅在受信环境中使用，因为它可能会因缺乏证书验证而暴露您面临的安全风险。
 
-## Authentication with alternative package indexes
+## 使用替代包索引的身份验证
 
-See the [alternative indexes integration guide](../guides/integration/alternative-indexes.md) for
-details on authentication with popular alternative Python package indexes.
+有关使用流行的替代 Python 包索引进行身份验证的详细信息，请参阅 [替代索引集成指南](../guides/integration/alternative-indexes.md)。

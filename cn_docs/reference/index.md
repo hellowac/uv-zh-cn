@@ -1,11 +1,11 @@
-# Reference
+# 参考
 
-The reference section provides information about specific parts of uv:
+参考部分提供了关于 uv 特定部分的信息：
 
-- [Commands](./cli.md): A reference for uv's command line interface.
-- [Settings](./settings.md): A reference for uv's configuration schema.
-- [Resolver](./resolver-internals.md): Details about the internals of uv's resolver.
-- [Versioning](./versioning.md): uv's versioning policy.
-- [Platform support](./platforms.md): uv's supported operating systems and architectures.
+- [命令](./cli.md)：uv 命令行接口的参考。
+- [设置](./settings.md)：uv 配置模式的参考。
+- [解析器](./resolver-internals.md)：关于 uv 解析器内部工作的详细信息。
+- [版本控制](./versioning.md)：uv 的版本控制策略。
+- [平台支持](./platforms.md)：uv 支持的操作系统和架构。
 
-Looking for a broader overview? Check out the [concepts](../concepts/index.md) documentation.
+需要更广泛的概述？请查看 [概念](../concepts/index.md) 文档。

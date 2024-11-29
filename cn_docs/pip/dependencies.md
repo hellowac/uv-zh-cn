@@ -1,14 +1,12 @@
-# Declaring dependencies
+# 声明依赖
 
-It is best practice to declare dependencies in a static file instead of modifying environments with
-ad-hoc installations. Once dependencies are defined, they can be [locked](./compile.md) to create a
-consistent, reproducible environment.
+最好在静态文件中声明依赖，而不是通过临时安装来修改环境。一旦依赖被定义，可以通过[锁定](./compile.md)来创建一个一致的、可复现的环境。
 
-## Using `pyproject.toml`
+## 使用 `pyproject.toml`
 
-The `pyproject.toml` file is the Python standard for defining configuration for a project.
+`pyproject.toml` 文件是 Python 项目配置的标准文件。
 
-To define project dependencies in a `pyproject.toml` file:
+在 `pyproject.toml` 文件中声明项目的依赖：
 
 ```toml title="pyproject.toml"
 [project]
@@ -18,7 +16,7 @@ dependencies = [
 ]
 ```
 
-To define optional dependencies in a `pyproject.toml` file:
+在 `pyproject.toml` 文件中声明可选依赖：
 
 ```toml title="pyproject.toml"
 [project.optional-dependencies]
@@ -28,26 +26,19 @@ cli = [
 ]
 ```
 
-Each of the keys defines an "extra", which can be installed using the `--extra` and `--all-extras`
-flags or `package[<extra>]` syntax. See the documentation on
-[installing packages](./packages.md#installing-packages-from-files) for more details.
+每个键定义了一个 "extra"，可以使用 `--extra` 和 `--all-extras` 标志或 `package[<extra>]` 语法来安装。有关更多详情，请参阅[安装包](./packages.md#installing-packages-from-files)文档。
 
-See the official
-[`pyproject.toml` guide](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/) for
-more details on getting started with a `pyproject.toml`.
+有关如何开始使用 `pyproject.toml` 的更多信息，请参阅官方[`pyproject.toml`指南](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)。
 
-## Using `requirements.in`
+## 使用 `requirements.in`
 
-It is also common to use a lightweight `requirements.txt` format to declare the dependencies for the
-project. Each requirement is defined on its own line. Commonly, this file is called
-`requirements.in` to distinguish it from `requirements.txt` which is used for the locked
-dependencies.
+另外，使用轻量级的 `requirements.txt` 格式来声明项目依赖也很常见。每个依赖项单独列在一行。通常，这个文件被命名为 `requirements.in`，以区别于用于锁定依赖的 `requirements.txt`。
 
-To define dependencies in a `requirements.in` file:
+在 `requirements.in` 文件中声明依赖：
 
 ```python title="requirements.in"
 httpx
 ruff>=0.3.0
 ```
 
-Optional dependencies groups are not supported in this format.
+此格式不支持可选依赖分组。

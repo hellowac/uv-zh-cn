@@ -1,131 +1,93 @@
-# Using alternative package indexes
+# 使用替代包索引
 
-While uv uses the official Python Package Index (PyPI) by default, it also supports alternative
-package indexes. Most alternative indexes require various forms of authentication, which requires
-some initial setup.
+虽然 uv 默认使用官方的 Python 包索引（PyPI），但它也支持使用替代包索引。大多数替代索引需要各种形式的身份验证，这需要一些初步的设置。
 
 !!! important
 
-    Please read the documentation on [using multiple indexes](../../pip/compatibility.md#packages-that-exist-on-multiple-indexes)
-    in uv — the default behavior is different from pip to prevent dependency confusion attacks, but
-    this means that uv may not find the versions of a package as you'd expect.
+    请阅读 uv 上有关 [使用多个索引](../../pip/compatibility.md#packages-that-exist-on-multiple-indexes) 的文档 — 默认行为与 pip 不同，以防止依赖冲突攻击，但这意味着 uv 可能无法按预期找到包的版本。
 
 ## Azure Artifacts
 
-uv can install packages from
-[Azure DevOps Artifacts](https://learn.microsoft.com/en-us/azure/devops/artifacts/start-using-azure-artifacts?view=azure-devops&tabs=nuget%2Cnugetserver).
-Authenticate to a feed using a
-[Personal Access Token](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows)
-(PAT) or interactively using the [`keyring`](https://github.com/jaraco/keyring) package.
+uv 可以从 [Azure DevOps Artifacts](https://learn.microsoft.com/en-us/azure/devops/artifacts/start-using-azure-artifacts?view=azure-devops&tabs=nuget%2Cnugetserver) 安装包。可以使用 [个人访问令牌](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows)（PAT）或通过 [`keyring`](https://github.com/jaraco/keyring) 包进行交互式身份验证。
 
-### Using a PAT
+### 使用 PAT
 
-If there is a PAT available (eg
-[`$(System.AccessToken)` in an Azure pipeline](https://learn.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#systemaccesstoken)),
-credentials can be provided via the "Basic" HTTP authentication scheme. Include the PAT in the
-password field of the URL. A username must be included as well, but can be any string.
+如果有可用的 PAT（例如在 Azure 管道中使用 [`$(System.AccessToken)`](https://learn.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#systemaccesstoken)），则可以通过 "Basic" HTTP 身份验证方案提供凭据。将 PAT 包含在 URL 的密码字段中。用户名也必须包含，但可以是任何字符串。
 
-For example, with the token stored in the `$ADO_PAT` environment variable, set the index URL with:
+例如，如果 PAT 存储在 `$ADO_PAT` 环境变量中，则使用以下命令设置索引 URL：
 
 ```console
 $ export UV_EXTRA_INDEX_URL=https://dummy:$ADO_PAT@pkgs.dev.azure.com/{organisation}/{project}/_packaging/{feedName}/pypi/simple/
 ```
 
-### Using `keyring`
+### 使用 `keyring`
 
-If there is not a PAT available, authenticate to Artifacts using the
-[`keyring`](https://github.com/jaraco/keyring) package with
-[the `artifacts-keyring` plugin](https://github.com/Microsoft/artifacts-keyring). Because these two
-packages are required to authenticate to Azure Artifacts, they must be pre-installed from a source
-other than Artifacts.
+如果没有 PAT 可用，可以使用 [`keyring`](https://github.com/jaraco/keyring) 包和 [`artifacts-keyring`](https://github.com/Microsoft/artifacts-keyring) 插件对 Artifacts 进行身份验证。因为这两个包是进行 Azure Artifacts 身份验证所必需的，所以必须从 Artifacts 以外的源预先安装它们。
 
-The `artifacts-keyring` plugin wraps
-[the Azure Artifacts Credential Provider tool](https://github.com/microsoft/artifacts-credprovider).
-The credential provider supports a few different authentication modes including interactive login —
-see [the tool's documentation](https://github.com/microsoft/artifacts-credprovider) for information
-on configuration.
+`artifacts-keyring` 插件封装了 [Azure Artifacts Credential Provider 工具](https://github.com/microsoft/artifacts-credprovider)。该凭证提供程序支持多种身份验证模式，包括交互式登录 —— 详细的配置信息请参考 [该工具的文档](https://github.com/microsoft/artifacts-credprovider)。
 
-uv only supports using the `keyring` package in
-[subprocess mode](https://github.com/astral-sh/uv/blob/main/PIP_COMPATIBILITY.md#registry-authentication).
-The `keyring` executable must be in the `PATH`, i.e., installed globally or in the active
-environment. The `keyring` CLI requires a username in the URL, so the index URL must include the
-default username `VssSessionToken`.
+uv 仅支持在 [子进程模式](https://github.com/astral-sh/uv/blob/main/PIP_COMPATIBILITY.md#registry-authentication) 中使用 `keyring` 包。`keyring` 可执行文件必须在 `PATH` 中，即全局安装或安装在当前环境中。`keyring` CLI 需要在 URL 中包含用户名，且必须使用默认用户名 `VssSessionToken`。
 
 ```console
-$ # Pre-install keyring and the Artifacts plugin from the public PyPI
+$ # 从公共 PyPI 安装 keyring 和 Artifacts 插件
 $ uv tool install keyring --with artifacts-keyring
 
-$ # Enable keyring authentication
+$ # 启用 keyring 身份验证
 $ export UV_KEYRING_PROVIDER=subprocess
 
-$ # Configure the index URL with the username
+$ # 配置带有用户名的索引 URL
 $ export UV_EXTRA_INDEX_URL=https://VssSessionToken@pkgs.dev.azure.com/{organisation}/{project}/_packaging/{feedName}/pypi/simple/
 ```
 
 ## Google Artifact Registry
 
-uv can install packages from
-[Google Artifact Registry](https://cloud.google.com/artifact-registry/docs). Authenticate to a
-repository using password authentication or using [`keyring`](https://github.com/jaraco/keyring)
-package.
+uv 可以从 [Google Artifact Registry](https://cloud.google.com/artifact-registry/docs) 安装包。可以使用密码认证或通过 [`keyring`](https://github.com/jaraco/keyring) 包进行身份验证。
 
 !!! note
 
-    This guide assumes `gcloud` CLI has previously been installed and setup.
+    本指南假定已安装并设置好 `gcloud` CLI。
 
-### Password authentication
+### 密码认证
 
-Credentials can be provided via "Basic" HTTP authentication scheme. Include access token in the
-password field of the URL. Username must be `oauth2accesstoken`, otherwise authentication will fail.
+可以通过 "Basic" HTTP 身份验证方案提供凭据。将访问令牌包含在 URL 的密码字段中。用户名必须是 `oauth2accesstoken`，否则身份验证将失败。
 
-For example, with the token stored in the `$ARTIFACT_REGISTRY_TOKEN` environment variable, set the
-index URL with:
+例如，如果令牌存储在 `$ARTIFACT_REGISTRY_TOKEN` 环境变量中，则使用以下命令设置索引 URL：
 
 ```bash
 export ARTIFACT_REGISTRY_TOKEN=$(gcloud auth application-default print-access-token)
 export UV_EXTRA_INDEX_URL=https://oauth2accesstoken:$ARTIFACT_REGISTRY_TOKEN@{region}-python.pkg.dev/{projectId}/{repositoryName}/simple
 ```
 
-### Using `keyring`
+### 使用 `keyring`
 
-You can also authenticate to Artifact Registry using [`keyring`](https://github.com/jaraco/keyring)
-package with
-[`keyrings.google-artifactregistry-auth` plugin](https://github.com/GoogleCloudPlatform/artifact-registry-python-tools).
-Because these two packages are required to authenticate to Artifact Registry, they must be
-pre-installed from a source other than Artifact Registry.
+你也可以通过 [`keyring`](https://github.com/jaraco/keyring) 包和 [`keyrings.google-artifactregistry-auth`](https://github.com/GoogleCloudPlatform/artifact-registry-python-tools) 插件对 Artifact Registry 进行身份验证。因为这两个包是进行 Artifact Registry 身份验证所必需的，所以必须从 Artifact Registry 以外的源预先安装它们。
 
-The `artifacts-keyring` plugin wraps [gcloud CLI](https://cloud.google.com/sdk/gcloud) to generate
-short-lived access tokens, securely store them in system keyring and refresh them when they are
-expired.
+`artifacts-keyring` 插件封装了 [gcloud CLI](https://cloud.google.com/sdk/gcloud)，用于生成短期访问令牌，并将其安全地存储在系统密钥链中，当令牌过期时会自动刷新。
 
-uv only supports using the `keyring` package in
-[subprocess mode](https://github.com/astral-sh/uv/blob/main/PIP_COMPATIBILITY.md#registry-authentication).
-The `keyring` executable must be in the `PATH`, i.e., installed globally or in the active
-environment. The `keyring` CLI requires a username in the URL and it must be `oauth2accesstoken`.
+uv 仅支持在 [子进程模式](https://github.com/astral-sh/uv/blob/main/PIP_COMPATIBILITY.md#registry-authentication) 中使用 `keyring` 包。`keyring` 可执行文件必须在 `PATH` 中，即全局安装或安装在当前环境中。`keyring` CLI 需要在 URL 中包含用户名，且必须是 `oauth2accesstoken`。
 
 ```bash
-# Pre-install keyring and Artifact Registry plugin from the public PyPI
+# 从公共 PyPI 安装 keyring 和 Artifact Registry 插件
 uv tool install keyring --with keyrings.google-artifactregistry-auth
 
-# Enable keyring authentication
+# 启用 keyring 身份验证
 export UV_KEYRING_PROVIDER=subprocess
 
-# Configure the index URL with the username
+# 配置带有用户名的索引 URL
 export UV_EXTRA_INDEX_URL=https://oauth2accesstoken@{region}-python.pkg.dev/{projectId}/{repositoryName}/simple
 ```
 
 ## AWS CodeArtifact
 
-uv can install packages from
-[AWS CodeArtifact](https://docs.aws.amazon.com/codeartifact/latest/ug/using-python.html).
+uv 可以从 [AWS CodeArtifact](https://docs.aws.amazon.com/codeartifact/latest/ug/using-python.html) 安装包。
 
-The authorization token can be retrieved using the `awscli` tool.
+可以使用 `awscli` 工具获取授权令牌。
 
 !!! note
 
-    This guide assumes the AWS CLI has previously been authenticated.
+    本指南假定 AWS CLI 已经完成身份验证。
 
-First, declare some constants for your CodeArtifact repository:
+首先，声明一些用于 CodeArtifact 仓库的常量：
 
 ```bash
 export AWS_DOMAIN="<your-domain>"
@@ -134,7 +96,7 @@ export AWS_REGION="<your-region>"
 export AWS_CODEARTIFACT_REPOSITORY="<your-repository>"
 ```
 
-Then, retrieve a token from the `awscli`:
+然后，使用 `awscli` 获取令牌：
 
 ```bash
 export AWS_CODEARTIFACT_TOKEN="$(
@@ -146,28 +108,26 @@ export AWS_CODEARTIFACT_TOKEN="$(
 )"
 ```
 
-And configure the index URL:
+配置索引 URL：
 
 ```bash
 export UV_EXTRA_INDEX_URL="https://aws:${AWS_CODEARTIFACT_TOKEN}@${AWS_DOMAIN}-${AWS_ACCOUNT_ID}.d.codeartifact.${AWS_REGION}.amazonaws.com/pypi/${AWS_CODEARTIFACT_REPOSITORY}/simple/"
 ```
 
-### Publishing packages
+### 发布包
 
-If you also want to publish your own packages to AWS CodeArtifact, you can use `uv publish` as
-described in the [publishing guide](../publish.md). You will need to set `UV_PUBLISH_URL` separately
-from the credentials:
+如果你还想将自己的包发布到 AWS CodeArtifact，可以使用 `uv publish`，如 [发布指南](../publish.md) 所述。你需要单独设置 `UV_PUBLISH_URL` 和凭据：
 
 ```bash
-# Configure uv to use AWS CodeArtifact
+# 配置 uv 使用 AWS CodeArtifact
 export UV_PUBLISH_URL="https://${AWS_DOMAIN}-${AWS_ACCOUNT_ID}.d.codeartifact.${AWS_REGION}.amazonaws.com/pypi/${AWS_CODEARTIFACT_REPOSITORY}/"
 export UV_PUBLISH_USERNAME=aws
 export UV_PUBLISH_PASSWORD="$AWS_CODEARTIFACT_TOKEN"
 
-# Publish the package
+# 发布包
 uv publish
 ```
 
-## Other indexes
+## 其他索引
 
-uv is also known to work with JFrog's Artifactory.
+uv 也可以与 JFrog 的 Artifactory 一起使用。

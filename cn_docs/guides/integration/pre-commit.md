@@ -1,41 +1,40 @@
-# Using uv in pre-commit
+# 在 pre-commit 中使用 uv
 
-An official pre-commit hook is provided at
-[`astral-sh/uv-pre-commit`](https://github.com/astral-sh/uv-pre-commit).
+官方提供了一个 [pre-commit 钩子](https://github.com/astral-sh/uv-pre-commit)。
 
-To compile requirements via pre-commit, add the following to the `.pre-commit-config.yaml`:
+要通过 pre-commit 编译要求，可以将以下内容添加到 `.pre-commit-config.yaml` 文件中：
 
 ```yaml title=".pre-commit-config.yaml"
 - repo: https://github.com/astral-sh/uv-pre-commit
-  # uv version.
+  # uv 版本
   rev: 0.5.5
   hooks:
-    # Compile requirements
+    # 编译 requirements
     - id: pip-compile
       args: [requirements.in, -o, requirements.txt]
 ```
 
-To compile alternative files, modify `args` and `files`:
+要编译其他文件，修改 `args` 和 `files`：
 
 ```yaml title=".pre-commit-config.yaml"
 - repo: https://github.com/astral-sh/uv-pre-commit
-  # uv version.
+  # uv 版本
   rev: 0.5.5
   hooks:
-    # Compile requirements
+    # 编译 requirements
     - id: pip-compile
       args: [requirements-dev.in, -o, requirements-dev.txt]
       files: ^requirements-dev\.(in|txt)$
 ```
 
-To run the hook over multiple files at the same time:
+要同时对多个文件运行钩子：
 
 ```yaml title=".pre-commit-config.yaml"
 - repo: https://github.com/astral-sh/uv-pre-commit
-  # uv version.
+  # uv 版本
   rev: 0.5.5
   hooks:
-    # Compile requirements
+    # 编译 requirements
     - id: pip-compile
       name: pip-compile requirements.in
       args: [requirements.in, -o, requirements.txt]

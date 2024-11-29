@@ -1,37 +1,26 @@
-## Project metadata
+## 项目元数据
+
 ### [`conflicts`](#conflicts) {: #conflicts }
 
-Conflicting extras or groups may be declared here.
+此处可以声明冲突的 extras 或组。
 
-It's useful to declare conflicts when, for example, two or more extras
-have mutually incompatible dependencies. Extra `foo` might depend
-on `numpy==2.0.0` while extra `bar` might depend on `numpy==2.1.0`.
-These extras cannot be activated at the same time. This usually isn't
-a problem for pip-style workflows, but when using projects in uv that
-support with universal resolution, it will try to produce a resolution
-that satisfies both extras simultaneously.
+当两个或更多的 extras 存在相互不兼容的依赖时，声明冲突是有用的。例如，extra `foo` 可能依赖于 `numpy==2.0.0`，而 extra `bar` 可能依赖于 `numpy==2.1.0`。这两个 extras 不能同时激活。对于 pip 风格的工作流，这通常不是问题，但在使用支持通用解析的 uv 项目时，uv 会尝试生成一个同时满足这两个 extras 的解析方案。
 
-When this happens, resolution will fail, because one cannot install
-both `numpy 2.0.0` and `numpy 2.1.0` into the same environment.
+当发生这种情况时，解析将失败，因为无法将 `numpy 2.0.0` 和 `numpy 2.1.0` 同时安装到同一个环境中。
 
-To work around this, you may specify `foo` and `bar` as conflicting
-extras (you can do the same with groups). When doing universal
-resolution in project mode, these extras will get their own "forks"
-distinct from one another in order to permit conflicting dependencies.
-In exchange, if one tries to install from the lock file with both
-conflicting extras activated, installation will fail.
+为了解决这个问题，可以将 `foo` 和 `bar` 声明为冲突的 extras（对于组也可以这样做）。在项目模式下进行通用解析时，这些 extras 将在不同的 "forks" 中进行处理，以允许冲突的依赖关系。作为交换，如果尝试从锁文件中安装并同时激活这两个冲突的 extras，安装将失败。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[list[dict]]`
+**类型**：`list[list[dict]]`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv]
-# Require that `package[test1]` and `package[test2]`
-# requirements are resolved in different forks so that they
-# cannot conflict with one another.
+# 要求 `package[test1]` 和 `package[test2]`
+# 的要求在不同的 forks 中解析，以便它们
+# 之间不能发生冲突。
 conflicts = [
     [
         { extra = "test1" },
@@ -39,7 +28,7 @@ conflicts = [
     ]
 ]
 
-# Or, to declare conflicting groups:
+# 或者，声明冲突的组：
 conflicts = [
     [
         { group = "test1" },
@@ -52,30 +41,25 @@ conflicts = [
 
 ### [`constraint-dependencies`](#constraint-dependencies) {: #constraint-dependencies }
 
-Constraints to apply when resolving the project's dependencies.
+在解析项目的依赖时应用的约束。
 
-Constraints are used to restrict the versions of dependencies that are selected during
-resolution.
+约束用于限制在解析过程中选择的依赖版本。
 
-Including a package as a constraint will _not_ trigger installation of the package on its
-own; instead, the package must be requested elsewhere in the project's first-party or
-transitive dependencies.
+将一个包作为约束包含并不会触发该包的单独安装；相反，该包必须在项目的第一方或传递性依赖中其他地方被请求。
 
 !!! note
-    In `uv lock`, `uv sync`, and `uv run`, uv will only read `constraint-dependencies` from
-    the `pyproject.toml` at the workspace root, and will ignore any declarations in other
-    workspace members or `uv.toml` files.
 
-**Default value**: `[]`
+    在 `uv lock`、`uv sync` 和 `uv run` 中，uv 只会读取工作区根目录下 `pyproject.toml` 中的 `constraint-dependencies`，并会忽略其他工作区成员或 `uv.toml` 文件中的声明。
 
-**Type**: `list[str]`
+**默认值**：`[]`
 
-**Example usage**:
+**类型**：`list[str]`
+
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv]
-# Ensure that the grpcio version is always less than 1.65, if it's requested by a
-# transitive dependency.
+# 确保如果 grpcio 被传递依赖请求时，其版本始终小于 1.65。
 constraint-dependencies = ["grpcio<1.65"]
 ```
 
@@ -83,13 +67,13 @@ constraint-dependencies = ["grpcio<1.65"]
 
 ### [`default-groups`](#default-groups) {: #default-groups }
 
-The list of `dependency-groups` to install by default.
+默认安装的 `dependency-groups` 列表。
 
-**Default value**: `["dev"]`
+**默认值**：`["dev"]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv]
@@ -100,21 +84,17 @@ default-groups = ["docs"]
 
 ### [`dev-dependencies`](#dev-dependencies) {: #dev-dependencies }
 
-The project's development dependencies.
+项目的开发依赖。
 
-Development dependencies will be installed by default in `uv run` and `uv sync`, but will
-not appear in the project's published metadata.
+开发依赖将默认在 `uv run` 和 `uv sync` 中安装，但不会出现在项目的发布元数据中。
 
-Use of this field is not recommend anymore. Instead, use the `dependency-groups.dev` field
-which is a standardized way to declare development dependencies. The contents of
-`tool.uv.dev-dependencies` and `dependency-groups.dev` are combined to determine the the
-final requirements of the `dev` dependency group.
+不再推荐使用此字段。建议改为使用 `dependency-groups.dev` 字段，它是声明开发依赖的标准方式。`tool.uv.dev-dependencies` 和 `dependency-groups.dev` 的内容会合并，以确定 `dev` 依赖组的最终要求。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv]
@@ -125,24 +105,21 @@ dev-dependencies = ["ruff==0.5.0"]
 
 ### [`environments`](#environments) {: #environments }
 
-A list of supported environments against which to resolve dependencies.
+支持的环境列表，用于解析依赖。
 
-By default, uv will resolve for all possible environments during a `uv lock` operation.
-However, you can restrict the set of supported environments to improve performance and avoid
-unsatisfiable branches in the solution space.
+默认情况下，`uv lock` 操作会为所有可能的环境进行解析。然而，您可以限制支持的环境集，以提高性能并避免解空间中无法满足的分支。
 
-These environments will also respected when `uv pip compile` is invoked with the
-`--universal` flag.
+在使用 `uv pip compile` 并带有 `--universal` 标志时，这些环境也会被尊重。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `str | list[str]`
+**类型**：`str | list[str]`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv]
-# Resolve for macOS, but not for Linux or Windows.
+# 只为 macOS 解析，不为 Linux 或 Windows 解析。
 environments = ["sys_platform == 'darwin'"]
 ```
 
@@ -150,19 +127,13 @@ environments = ["sys_platform == 'darwin'"]
 
 ### [`index`](#index) {: #index }
 
-The indexes to use when resolving dependencies.
+解析依赖时使用的索引。
 
-Accepts either a repository compliant with [PEP 503](https://peps.python.org/pep-0503/)
-(the simple repository API), or a local directory laid out in the same format.
+接受符合 [PEP 503](https://peps.python.org/pep-0503/)（简单仓库 API）规范的仓库，或本地目录，格式相同。
 
-Indexes are considered in the order in which they're defined, such that the first-defined
-index has the highest priority. Further, the indexes provided by this setting are given
-higher priority than any indexes specified via [`index_url`](#index-url) or
-[`extra_index_url`](#extra-index-url). uv will only consider the first index that contains
-a given package, unless an alternative [index strategy](#index-strategy) is specified.
+索引按照定义的顺序进行考虑，第一个定义的索引具有最高优先级。此外，通过此设置提供的索引优先级高于任何通过 [`index_url`](#index-url) 或 [`extra_index_url`](#extra-index-url) 指定的索引。uv 只会考虑包含给定包的第一个索引，除非指定了替代的 [索引策略](#index-strategy)。
 
-If an index is marked as `explicit = true`, it will be used exclusively for those
-dependencies that select it explicitly via `[tool.uv.sources]`, as in:
+如果某个索引标记为 `explicit = true`，则只有那些明确通过 `[tool.uv.sources]` 选择该索引的依赖会使用它，如下所示：
 
 ```toml
 [[tool.uv.index]]
@@ -174,15 +145,13 @@ explicit = true
 torch = { index = "pytorch" }
 ```
 
-If an index is marked as `default = true`, it will be moved to the end of the prioritized list, such that it is
-given the lowest priority when resolving packages. Additionally, marking an index as default will disable the
-PyPI default index.
+如果某个索引标记为 `default = true`，则它将移到优先级列表的末尾，在解析包时给予最低优先级。此外，标记为默认的索引会禁用 PyPI 默认索引。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `dict`
+**类型**：`dict`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 
@@ -195,14 +164,13 @@ url = "https://download.pytorch.org/whl/cu121"
 
 ### [`managed`](#managed) {: #managed }
 
-Whether the project is managed by uv. If `false`, uv will ignore the project when
-`uv run` is invoked.
+项目是否由 uv 管理。如果为 `false`，则在调用 `uv run` 时，uv 将忽略该项目。
 
-**Default value**: `true`
+**默认值**：`true`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv]
@@ -213,35 +181,26 @@ managed = false
 
 ### [`override-dependencies`](#override-dependencies) {: #override-dependencies }
 
-Overrides to apply when resolving the project's dependencies.
+在解析项目依赖时应用的覆盖。
 
-Overrides are used to force selection of a specific version of a package, regardless of the
-version requested by any other package, and regardless of whether choosing that version
-would typically constitute an invalid resolution.
+覆盖用于强制选择特定版本的包，无论其他包请求的版本是什么，也不管选择该版本是否通常会导致无效的解析。
 
-While constraints are _additive_, in that they're combined with the requirements of the
-constituent packages, overrides are _absolute_, in that they completely replace the
-requirements of any constituent packages.
+虽然约束是_加法_的（即它们与构成包的要求合并），但覆盖是_绝对_的（即它们完全替代任何构成包的要求）。
 
-Including a package as an override will _not_ trigger installation of the package on its
-own; instead, the package must be requested elsewhere in the project's first-party or
-transitive dependencies.
+将包作为覆盖包含不会触发包的独立安装；相反，必须在项目的第一方或传递依赖中请求该包。
 
 !!! note
-    In `uv lock`, `uv sync`, and `uv run`, uv will only read `override-dependencies` from
-    the `pyproject.toml` at the workspace root, and will ignore any declarations in other
-    workspace members or `uv.toml` files.
+    在 `uv lock`、`uv sync` 和 `uv run` 中，uv 只会从工作空间根目录的 `pyproject.toml` 中读取 `override-dependencies`，并会忽略其他工作空间成员或 `uv.toml` 文件中的任何声明。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv]
-# Always install Werkzeug 2.3.0, regardless of whether transitive dependencies request
-# a different version.
+# 始终安装 Werkzeug 2.3.0，无论传递依赖是否请求不同版本。
 override-dependencies = ["werkzeug==2.3.0"]
 ```
 
@@ -249,22 +208,17 @@ override-dependencies = ["werkzeug==2.3.0"]
 
 ### [`package`](#package) {: #package }
 
-Whether the project should be considered a Python package, or a non-package ("virtual")
-project.
+是否将项目视为 Python 包，或视为非包（“虚拟”）项目。
 
-Packages are built and installed into the virtual environment in editable mode and thus
-require a build backend, while virtual projects are _not_ built or installed; instead, only
-their dependencies are included in the virtual environment.
+包会以可编辑模式构建并安装到虚拟环境中，因此需要一个构建后端，而虚拟项目则_不会_被构建或安装；相反，仅其依赖项会被包含在虚拟环境中。
 
-Creating a package requires that a `build-system` is present in the `pyproject.toml`, and
-that the project adheres to a structure that adheres to the build backend's expectations
-(e.g., a `src` layout).
+创建包要求 `pyproject.toml` 中存在 `build-system`，并且项目必须遵循符合构建后端期望的结构（例如，`src` 布局）。
 
-**Default value**: `true`
+**默认值**：`true`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv]
@@ -275,19 +229,17 @@ package = false
 
 ### [`sources`](#sources) {: #sources }
 
-The sources to use when resolving dependencies.
+在解析依赖时使用的源。
 
-`tool.uv.sources` enriches the dependency metadata with additional sources, incorporated
-during development. A dependency source can be a Git repository, a URL, a local path, or an
-alternative registry.
+`tool.uv.sources` 用于通过额外的源增强依赖元数据，这些源在开发过程中被合并。依赖源可以是 Git 仓库、URL、本地路径或替代的注册表。
 
-See [Dependencies](../concepts/projects/dependencies.md) for more.
+有关更多信息，请参见 [Dependencies](../concepts/projects/dependencies.md)。
 
-**Default value**: `{}`
+**默认值**：`{}`
 
-**Type**: `dict`
+**类型**：`dict`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 
@@ -304,18 +256,17 @@ pydantic = { path = "/path/to/pydantic", editable = true }
 #### [`exclude`](#workspace_exclude) {: #workspace_exclude }
 <span id="exclude"></span>
 
-Packages to exclude as workspace members. If a package matches both `members` and
-`exclude`, it will be excluded.
+要排除的工作空间成员包。如果一个包同时匹配 `members` 和 `exclude`，则它会被排除。
 
-Supports both globs and explicit paths.
+支持通配符和显式路径。
 
-For more information on the glob syntax, refer to the [`glob` documentation](https://docs.rs/glob/latest/glob/struct.Pattern.html).
+有关通配符语法的更多信息，请参考 [`glob` 文档](https://docs.rs/glob/latest/glob/struct.Pattern.html)。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv.workspace]
@@ -327,17 +278,17 @@ exclude = ["member1", "path/to/member2", "libs/*"]
 #### [`members`](#workspace_members) {: #workspace_members }
 <span id="members"></span>
 
-Packages to include as workspace members.
+作为工作空间成员包含的包。
 
-Supports both globs and explicit paths.
+支持通配符和显式路径。
 
-For more information on the glob syntax, refer to the [`glob` documentation](https://docs.rs/glob/latest/glob/struct.Pattern.html).
+有关通配符语法的更多信息，请参阅 [`glob` 文档](https://docs.rs/glob/latest/glob/struct.Pattern.html)。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 ```toml title="pyproject.toml"
 [tool.uv.workspace]
@@ -346,23 +297,20 @@ members = ["member1", "path/to/member2", "libs/*"]
 
 ---
 
-## Configuration
+## 配置
 ### [`allow-insecure-host`](#allow-insecure-host) {: #allow-insecure-host }
 
-Allow insecure connections to host.
+允许不安全的主机连接。
 
-Expects to receive either a hostname (e.g., `localhost`), a host-port pair (e.g.,
-`localhost:8080`), or a URL (e.g., `https://localhost`).
+期望接收一个主机名（例如，`localhost`）、一个主机-端口对（例如，`localhost:8080`）或一个 URL（例如，`https://localhost`）。
 
-WARNING: Hosts included in this list will not be verified against the system's certificate
-store. Only use `--allow-insecure-host` in a secure network with verified sources, as it
-bypasses SSL verification and could expose you to MITM attacks.
+警告：在此列表中的主机不会通过系统的证书存储进行验证。仅在安全的网络中并且确保来源可信时使用 `--allow-insecure-host`，因为它绕过了 SSL 验证，可能会暴露于中间人攻击（MITM）。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -380,16 +328,15 @@ bypasses SSL verification and could expose you to MITM attacks.
 
 ### [`cache-dir`](#cache-dir) {: #cache-dir }
 
-Path to the cache directory.
+缓存目录的路径。
 
-Defaults to `$HOME/Library/Caches/uv` on macOS, `$XDG_CACHE_HOME/uv` or `$HOME/.cache/uv` on
-Linux, and `%LOCALAPPDATA%\uv\cache` on Windows.
+在 macOS 上默认值为 `$HOME/Library/Caches/uv`，在 Linux 上为 `$XDG_CACHE_HOME/uv` 或 `$HOME/.cache/uv`，在 Windows 上为 `%LOCALAPPDATA%\uv\cache`。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -407,74 +354,55 @@ Linux, and `%LOCALAPPDATA%\uv\cache` on Windows.
 
 ### [`cache-keys`](#cache-keys) {: #cache-keys }
 
-The keys to consider when caching builds for the project.
+在为项目缓存构建时考虑的键。
 
-Cache keys enable you to specify the files or directories that should trigger a rebuild when
-modified. By default, uv will rebuild a project whenever the `pyproject.toml`, `setup.py`,
-or `setup.cfg` files in the project directory are modified, i.e.:
+缓存键允许你指定哪些文件或目录在修改时应触发重建。默认情况下，uv 会在修改项目目录中的 `pyproject.toml`、`setup.py` 或 `setup.cfg` 文件时重建项目，即：
 
 ```toml
 cache-keys = [{ file = "pyproject.toml" }, { file = "setup.py" }, { file = "setup.cfg" }]
 ```
 
-As an example: if a project uses dynamic metadata to read its dependencies from a
-`requirements.txt` file, you can specify `cache-keys = [{ file = "requirements.txt" }, { file = "pyproject.toml" }]`
-to ensure that the project is rebuilt whenever the `requirements.txt` file is modified (in
-addition to watching the `pyproject.toml`).
+例如：如果项目使用动态元数据从 `requirements.txt` 文件读取其依赖项，你可以指定 `cache-keys = [{ file = "requirements.txt" }, { file = "pyproject.toml" }]` 来确保每当 `requirements.txt` 文件被修改时（除了 `pyproject.toml` 文件的监视之外），项目会被重建。
 
-Globs are supported, following the syntax of the [`glob`](https://docs.rs/glob/0.3.1/glob/struct.Pattern.html)
-crate. For example, to invalidate the cache whenever a `.toml` file in the project directory
-or any of its subdirectories is modified, you can specify `cache-keys = [{ file = "**/*.toml" }]`.
-Note that the use of globs can be expensive, as uv may need to walk the filesystem to
-determine whether any files have changed.
+支持通配符，遵循 [`glob`](https://docs.rs/glob/0.3.1/glob/struct.Pattern.html) crate 的语法。例如，要使项目目录或其任何子目录中的 `.toml` 文件被修改时使缓存失效，可以指定 `cache-keys = [{ file = "**/*.toml" }]`。请注意，使用通配符可能会比较消耗性能，因为 uv 可能需要遍历文件系统来确定是否有文件已更改。
 
-Cache keys can also include version control information. For example, if a project uses
-`setuptools_scm` to read its version from a Git commit, you can specify `cache-keys = [{ git = { commit = true }, { file = "pyproject.toml" }]`
-to include the current Git commit hash in the cache key (in addition to the
-`pyproject.toml`). Git tags are also supported via `cache-keys = [{ git = { commit = true, tags = true } }]`.
+缓存键还可以包括版本控制信息。例如，如果项目使用 `setuptools_scm` 从 Git 提交读取版本，你可以指定 `cache-keys = [{ git = { commit = true }, { file = "pyproject.toml" }]` 来将当前的 Git 提交哈希包括在缓存键中（除了 `pyproject.toml` 文件）。Git 标签也可以通过 `cache-keys = [{ git = { commit = true, tags = true } }]` 支持。
 
-Cache keys only affect the project defined by the `pyproject.toml` in which they're
-specified (as opposed to, e.g., affecting all members in a workspace), and all paths and
-globs are interpreted as relative to the project directory.
+缓存键仅影响由 `pyproject.toml` 定义的项目（而不是例如影响工作空间中的所有成员），并且所有路径和通配符都相对于项目目录进行解释。
 
-**Default value**: `[{ file = "pyproject.toml" }, { file = "setup.py" }, { file = "setup.cfg" }]`
+**默认值**：`[{ file = "pyproject.toml" }, { file = "setup.py" }, { file = "setup.cfg" }]`
 
-**Type**: `list[dict]`
+**类型**：`list[dict]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
     ```toml
     [tool.uv]
-    cache-keys = [{ file = "pyproject.toml" }, { file = "requirements.txt" }, { git = { commit = true }]
+    cache-keys = [{ file = "pyproject.toml" }, { file = "requirements.txt" }, { git = { commit = true }] }
     ```
 === "uv.toml"
 
     ```toml
-    cache-keys = [{ file = "pyproject.toml" }, { file = "requirements.txt" }, { git = { commit = true }]
+    cache-keys = [{ file = "pyproject.toml" }, { file = "requirements.txt" }, { git = { commit = true }] }
     ```
 
 ---
 
 ### [`compile-bytecode`](#compile-bytecode) {: #compile-bytecode }
 
-Compile Python files to bytecode after installation.
+在安装后将 Python 文件编译为字节码。
 
-By default, uv does not compile Python (`.py`) files to bytecode (`__pycache__/*.pyc`);
-instead, compilation is performed lazily the first time a module is imported. For use-cases
-in which start time is critical, such as CLI applications and Docker containers, this option
-can be enabled to trade longer installation times for faster start times.
+默认情况下，uv 不会将 Python（`.py`）文件编译为字节码（`__pycache__/*.pyc`）；相反，编译会在首次导入模块时惰性地进行。对于启动时间至关重要的使用场景，如命令行应用程序和 Docker 容器，可以启用此选项，以通过延长安装时间来换取更快的启动时间。
 
-When enabled, uv will process the entire site-packages directory (including packages that
-are not being modified by the current operation) for consistency. Like pip, it will also
-ignore errors.
+启用时，uv 会处理整个 `site-packages` 目录（包括当前操作未修改的包）以确保一致性。与 pip 类似，它也会忽略错误。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -492,16 +420,15 @@ ignore errors.
 
 ### [`concurrent-builds`](#concurrent-builds) {: #concurrent-builds }
 
-The maximum number of source distributions that uv will build concurrently at any given
-time.
+uv 在任何给定时间内并发构建的源分发包的最大数量。
 
-Defaults to the number of available CPU cores.
+默认为可用 CPU 核心的数量。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `int`
+**类型**：`int`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -519,14 +446,13 @@ Defaults to the number of available CPU cores.
 
 ### [`concurrent-downloads`](#concurrent-downloads) {: #concurrent-downloads }
 
-The maximum number of in-flight concurrent downloads that uv will perform at any given
-time.
+uv 在任何给定时间内并发进行的最大下载数。
 
-**Default value**: `50`
+**默认值**：`50`
 
-**Type**: `int`
+**类型**：`int`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -544,15 +470,15 @@ time.
 
 ### [`concurrent-installs`](#concurrent-installs) {: #concurrent-installs }
 
-The number of threads used when installing and unzipping packages.
+安装和解压包时使用的线程数。
 
-Defaults to the number of available CPU cores.
+默认为可用 CPU 核心的数量。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `int`
+**类型**：`int`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -570,14 +496,13 @@ Defaults to the number of available CPU cores.
 
 ### [`config-settings`](#config-settings) {: #config-settings }
 
-Settings to pass to the [PEP 517](https://peps.python.org/pep-0517/) build backend,
-specified as `KEY=VALUE` pairs.
+传递给 [PEP 517](https://peps.python.org/pep-0517/) 构建后端的设置，指定为 `KEY=VALUE` 键值对。
 
-**Default value**: `{}`
+**默认值**：`{}`
 
-**Type**: `dict`
+**类型**：`dict`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -595,25 +520,21 @@ specified as `KEY=VALUE` pairs.
 
 ### [`dependency-metadata`](#dependency-metadata) {: #dependency-metadata }
 
-Pre-defined static metadata for dependencies of the project (direct or transitive). When
-provided, enables the resolver to use the specified metadata instead of querying the
-registry or building the relevant package from source.
+项目（直接或传递）依赖项的预定义静态元数据。提供此项后，解析器将使用指定的元数据，而不是查询注册表或从源代码构建相关的包。
 
-Metadata should be provided in adherence with the [Metadata 2.3](https://packaging.python.org/en/latest/specifications/core-metadata/)
-standard, though only the following fields are respected:
+元数据应遵循 [Metadata 2.3](https://packaging.python.org/en/latest/specifications/core-metadata/) 标准，但只尊重以下字段：
 
-- `name`: The name of the package.
-- (Optional) `version`: The version of the package. If omitted, the metadata will be applied
-  to all versions of the package.
-- (Optional) `requires-dist`: The dependencies of the package (e.g., `werkzeug>=0.14`).
-- (Optional) `requires-python`: The Python version required by the package (e.g., `>=3.10`).
-- (Optional) `provides-extras`: The extras provided by the package.
+- `name`：包的名称。
+- （可选）`version`：包的版本。如果省略，元数据将应用于包的所有版本。
+- （可选）`requires-dist`：包的依赖项（例如，`werkzeug>=0.14`）。
+- （可选）`requires-python`：包所需的 Python 版本（例如，`>=3.10`）。
+- （可选）`provides-extras`：包提供的附加功能。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[dict]`
+**类型**：`list[dict]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -635,17 +556,15 @@ standard, though only the following fields are respected:
 
 ### [`exclude-newer`](#exclude-newer) {: #exclude-newer }
 
-Limit candidate packages to those that were uploaded prior to the given date.
+将候选包限制为在给定日期之前上传的包。
 
-Accepts both [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339.html) timestamps (e.g.,
-`2006-12-02T02:07:43Z`) and local dates in the same format (e.g., `2006-12-02`) in your
-system's configured time zone.
+接受 [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339.html) 时间戳（例如，`2006-12-02T02:07:43Z`）以及系统配置时区中的本地日期（例如，`2006-12-02`）。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -663,25 +582,21 @@ system's configured time zone.
 
 ### [`extra-index-url`](#extra-index-url) {: #extra-index-url }
 
-Extra URLs of package indexes to use, in addition to `--index-url`.
+除了 `--index-url` 之外，还可以使用额外的包索引 URL。
 
-Accepts either a repository compliant with [PEP 503](https://peps.python.org/pep-0503/)
-(the simple repository API), or a local directory laid out in the same format.
+接受符合 [PEP 503](https://peps.python.org/pep-0503/)（简单仓库 API）规范的仓库，或本地目录，以相同格式布局。
 
-All indexes provided via this flag take priority over the index specified by
-[`index_url`](#index-url) or [`index`](#index) with `default = true`. When multiple indexes
-are provided, earlier values take priority.
+通过此标志提供的所有索引优先于 [`index_url`](#index-url) 或 [`index`](#index) 中指定的 `default = true` 的索引。提供多个索引时，先定义的索引具有更高优先级。
 
-To control uv's resolution strategy when multiple indexes are present, see
-[`index_strategy`](#index-strategy).
+要控制在多个索引存在时 uv 的解析策略，请参见 [`index_strategy`](#index-strategy)。
 
-(Deprecated: use `index` instead.)
+（已弃用：请改用 `index`。）
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -699,20 +614,17 @@ To control uv's resolution strategy when multiple indexes are present, see
 
 ### [`find-links`](#find-links) {: #find-links }
 
-Locations to search for candidate distributions, in addition to those found in the registry
-indexes.
+除了在注册表索引中找到的包外，还可以在以下位置查找候选发行版。
 
-If a path, the target must be a directory that contains packages as wheel files (`.whl`) or
-source distributions (e.g., `.tar.gz` or `.zip`) at the top level.
+如果是路径，则目标必须是一个目录，该目录包含以轮子文件（`.whl`）或源代码发行版（如 `.tar.gz` 或 `.zip`）为顶级文件的包。
 
-If a URL, the page must contain a flat list of links to package files adhering to the
-formats described above.
+如果是 URL，则页面必须包含一个平面列表，链接指向符合上述格式的包文件。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -730,19 +642,13 @@ formats described above.
 
 ### [`index`](#index) {: #index }
 
-The package indexes to use when resolving dependencies.
+解析依赖时要使用的包索引。
 
-Accepts either a repository compliant with [PEP 503](https://peps.python.org/pep-0503/)
-(the simple repository API), or a local directory laid out in the same format.
+接受符合 [PEP 503](https://peps.python.org/pep-0503/)（简单仓库 API）规范的仓库，或本地目录，且目录布局符合相同的格式。
 
-Indexes are considered in the order in which they're defined, such that the first-defined
-index has the highest priority. Further, the indexes provided by this setting are given
-higher priority than any indexes specified via [`index_url`](#index-url) or
-[`extra_index_url`](#extra-index-url). uv will only consider the first index that contains
-a given package, unless an alternative [index strategy](#index-strategy) is specified.
+索引的优先级按照定义的顺序进行考虑，先定义的索引具有最高优先级。此外，通过此设置提供的索引优先于通过 [`index_url`](#index-url) 或 [`extra_index_url`](#extra-index-url) 指定的索引。uv 将只考虑包含给定包的第一个索引，除非指定了其他的 [索引策略](#index-strategy)。
 
-If an index is marked as `explicit = true`, it will be used exclusively for those
-dependencies that select it explicitly via `[tool.uv.sources]`, as in:
+如果索引标记为 `explicit = true`，则该索引将仅用于那些通过 `[tool.uv.sources]` 显式选择它的依赖项，例如：
 
 ```toml
 [[tool.uv.index]]
@@ -754,15 +660,13 @@ explicit = true
 torch = { index = "pytorch" }
 ```
 
-If an index is marked as `default = true`, it will be moved to the end of the prioritized list, such that it is
-given the lowest priority when resolving packages. Additionally, marking an index as default will disable the
-PyPI default index.
+如果索引标记为 `default = true`，则该索引将被移到优先级列表的末尾，在解析包时优先级最低。此外，将索引标记为默认将禁用 PyPI 默认索引。
 
-**Default value**: `"[]"`
+**默认值**：`"[]"`
 
-**Type**: `dict`
+**类型**：`dict`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -783,22 +687,19 @@ PyPI default index.
 
 ### [`index-strategy`](#index-strategy) {: #index-strategy }
 
-The strategy to use when resolving against multiple index URLs.
+解析多个索引 URL 时使用的策略。
 
-By default, uv will stop at the first index on which a given package is available, and
-limit resolutions to those present on that first index (`first-match`). This prevents
-"dependency confusion" attacks, whereby an attacker can upload a malicious package under the
-same name to an alternate index.
+默认情况下，uv 会在找到给定包的第一个索引时停止，并将解析限制为该索引中的包（`first-match`）。这可以防止“依赖混淆”攻击，攻击者可以在另一个索引中上传恶意包，伪装成相同的包名。
 
-**Default value**: `"first-index"`
+**默认值**：`"first-index"`
 
-**Possible values**:
+**可能值**：
 
-- `"first-index"`: Only use results from the first index that returns a match for a given package name
-- `"unsafe-first-match"`: Search for every package name across all indexes, exhausting the versions from the first index before moving on to the next
-- `"unsafe-best-match"`: Search for every package name across all indexes, preferring the "best" version found. If a package version is in multiple indexes, only look at the entry for the first index
+- `"first-index"`：只使用第一个返回匹配结果的索引中的结果
+- `"unsafe-first-match"`：在所有索引中搜索每个包名，先消耗第一个索引中的所有版本，再继续查找下一个索引
+- `"unsafe-best-match"`：在所有索引中搜索每个包名，优先选择找到的“最佳”版本。如果某个包版本出现在多个索引中，只查看第一个索引中的条目
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -816,21 +717,19 @@ same name to an alternate index.
 
 ### [`index-url`](#index-url) {: #index-url }
 
-The URL of the Python package index (by default: <https://pypi.org/simple>).
+Python 包索引的 URL（默认值：<https://pypi.org/simple>）。
 
-Accepts either a repository compliant with [PEP 503](https://peps.python.org/pep-0503/)
-(the simple repository API), or a local directory laid out in the same format.
+接受符合 [PEP 503](https://peps.python.org/pep-0503/)（简单仓库 API）规范的仓库，或一个本地目录，目录结构符合相同的格式。
 
-The index provided by this setting is given lower priority than any indexes specified via
-[`extra_index_url`](#extra-index-url) or [`index`](#index).
+通过此设置提供的索引优先级低于通过 [`extra_index_url`](#extra-index-url) 或 [`index`](#index) 指定的任何索引。
 
-(Deprecated: use `index` instead.)
+（已弃用：请改用 `index`。）
 
-**Default value**: `"https://pypi.org/simple"`
+**默认值**：`"https://pypi.org/simple"`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -848,16 +747,15 @@ The index provided by this setting is given lower priority than any indexes spec
 
 ### [`keyring-provider`](#keyring-provider) {: #keyring-provider }
 
-Attempt to use `keyring` for authentication for index URLs.
+尝试使用 `keyring` 进行索引 URL 的身份验证。
 
-At present, only `--keyring-provider subprocess` is supported, which configures uv to
-use the `keyring` CLI to handle authentication.
+目前，仅支持 `--keyring-provider subprocess`，该选项配置 uv 使用 `keyring` CLI 来处理身份验证。
 
-**Default value**: `"disabled"`
+**默认值**：`"disabled"`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -875,21 +773,20 @@ use the `keyring` CLI to handle authentication.
 
 ### [`link-mode`](#link-mode) {: #link-mode }
 
-The method to use when installing packages from the global cache.
+从全局缓存安装包时使用的方法。
 
-Defaults to `clone` (also known as Copy-on-Write) on macOS, and `hardlink` on Linux and
-Windows.
+在 macOS 上默认为 `clone`（即写时复制），在 Linux 和 Windows 上默认为 `hardlink`。
 
-**Default value**: `"clone" (macOS) or "hardlink" (Linux, Windows)`
+**默认值**：`"clone"（macOS）或 "hardlink"（Linux、Windows）`
 
-**Possible values**:
+**可能值**：
 
-- `"clone"`: Clone (i.e., copy-on-write) packages from the wheel into the `site-packages` directory
-- `"copy"`: Copy packages from the wheel into the `site-packages` directory
-- `"hardlink"`: Hard link packages from the wheel into the `site-packages` directory
-- `"symlink"`: Symbolically link packages from the wheel into the `site-packages` directory
+- `"clone"`：从 wheel 文件中克隆（即写时复制）包到 `site-packages` 目录
+- `"copy"`：将包从 wheel 文件复制到 `site-packages` 目录
+- `"hardlink"`：从 wheel 文件创建硬链接到 `site-packages` 目录
+- `"symlink"`：从 wheel 文件创建符号链接到 `site-packages` 目录
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -907,21 +804,17 @@ Windows.
 
 ### [`native-tls`](#native-tls) {: #native-tls }
 
-Whether to load TLS certificates from the platform's native certificate store.
+是否从平台的本地证书存储加载 TLS 证书。
 
-By default, uv loads certificates from the bundled `webpki-roots` crate. The
-`webpki-roots` are a reliable set of trust roots from Mozilla, and including them in uv
-improves portability and performance (especially on macOS).
+默认情况下，uv 从捆绑的 `webpki-roots` crate 加载证书。`webpki-roots` 是一组由 Mozilla 提供的可靠信任根，将其包含在 uv 中提高了可移植性和性能（特别是在 macOS 上）。
 
-However, in some cases, you may want to use the platform's native certificate store,
-especially if you're relying on a corporate trust root (e.g., for a mandatory proxy) that's
-included in your system's certificate store.
+然而，在某些情况下，您可能希望使用平台的本地证书存储，尤其是当您依赖于系统证书存储中包含的企业信任根（例如，强制代理）时。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -939,16 +832,15 @@ included in your system's certificate store.
 
 ### [`no-binary`](#no-binary) {: #no-binary }
 
-Don't install pre-built wheels.
+不安装预构建的轮子文件。
 
-The given packages will be built and installed from source. The resolver will still use
-pre-built wheels to extract package metadata, if available.
+指定的包将从源代码构建并安装。解析器仍然会使用预构建的轮子文件来提取包的元数据（如果有的话）。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -966,13 +858,13 @@ pre-built wheels to extract package metadata, if available.
 
 ### [`no-binary-package`](#no-binary-package) {: #no-binary-package }
 
-Don't install pre-built wheels for a specific package.
+不为特定包安装预构建的轮子文件。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -990,17 +882,15 @@ Don't install pre-built wheels for a specific package.
 
 ### [`no-build`](#no-build) {: #no-build }
 
-Don't build source distributions.
+不构建源分发包。
 
-When enabled, resolving will not run arbitrary Python code. The cached wheels of
-already-built source distributions will be reused, but operations that require building
-distributions will exit with an error.
+启用后，解析时不会运行任意的 Python 代码。已经构建好的源分发包的缓存轮子文件将被重用，但需要构建分发包的操作将会报错退出。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1018,16 +908,15 @@ distributions will exit with an error.
 
 ### [`no-build-isolation`](#no-build-isolation) {: #no-build-isolation }
 
-Disable isolation when building source distributions.
+构建源分发包时禁用隔离。
 
-Assumes that build dependencies specified by [PEP 518](https://peps.python.org/pep-0518/)
-are already installed.
+假设已安装 [PEP 518](https://peps.python.org/pep-0518/) 中指定的构建依赖。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1045,16 +934,15 @@ are already installed.
 
 ### [`no-build-isolation-package`](#no-build-isolation-package) {: #no-build-isolation-package }
 
-Disable isolation when building source distributions for a specific package.
+为特定包构建源分发包时禁用隔离。
 
-Assumes that the packages' build dependencies specified by [PEP 518](https://peps.python.org/pep-0518/)
-are already installed.
+假设包的构建依赖已按 [PEP 518](https://peps.python.org/pep-0518/) 中指定安装。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1072,13 +960,13 @@ are already installed.
 
 ### [`no-build-package`](#no-build-package) {: #no-build-package }
 
-Don't build source distributions for a specific package.
+不为特定包构建源分发包。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1096,14 +984,13 @@ Don't build source distributions for a specific package.
 
 ### [`no-cache`](#no-cache) {: #no-cache }
 
-Avoid reading from or writing to the cache, instead using a temporary directory for the
-duration of the operation.
+避免从缓存中读取或写入，而是使用一个临时目录来执行操作。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1121,14 +1008,13 @@ duration of the operation.
 
 ### [`no-index`](#no-index) {: #no-index }
 
-Ignore all registry indexes (e.g., PyPI), instead relying on direct URL dependencies and
-those provided via `--find-links`.
+忽略所有注册表索引（例如 PyPI），而是依赖直接 URL 依赖项和通过 `--find-links` 提供的依赖项。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1146,15 +1032,13 @@ those provided via `--find-links`.
 
 ### [`no-sources`](#no-sources) {: #no-sources }
 
-Ignore the `tool.uv.sources` table when resolving dependencies. Used to lock against the
-standards-compliant, publishable package metadata, as opposed to using any local or Git
-sources.
+在解析依赖项时忽略 `tool.uv.sources` 表格。用于锁定符合标准的、可发布的包元数据，而不是使用任何本地或 Git 来源。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1172,13 +1056,13 @@ sources.
 
 ### [`offline`](#offline) {: #offline }
 
-Disable network access, relying only on locally cached data and locally available files.
+禁用网络访问，仅依赖本地缓存数据和本地可用文件。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1196,23 +1080,21 @@ Disable network access, relying only on locally cached data and locally availabl
 
 ### [`prerelease`](#prerelease) {: #prerelease }
 
-The strategy to use when considering pre-release versions.
+在考虑预发布版本时使用的策略。
 
-By default, uv will accept pre-releases for packages that _only_ publish pre-releases,
-along with first-party requirements that contain an explicit pre-release marker in the
-declared specifiers (`if-necessary-or-explicit`).
+默认情况下，uv 将接受仅发布预发布版本的包，以及那些在声明的版本要求中明确包含预发布标记的第一方要求（`if-necessary-or-explicit`）。
 
-**Default value**: `"if-necessary-or-explicit"`
+**默认值**：`"if-necessary-or-explicit"`
 
-**Possible values**:
+**可能值**：
 
-- `"disallow"`: Disallow all pre-release versions
-- `"allow"`: Allow all pre-release versions
-- `"if-necessary"`: Allow pre-release versions if all versions of a package are pre-release
-- `"explicit"`: Allow pre-release versions for first-party packages with explicit pre-release markers in their version requirements
-- `"if-necessary-or-explicit"`: Allow pre-release versions if all versions of a package are pre-release, or if the package has an explicit pre-release marker in its version requirements
+- `"disallow"`：不允许任何预发布版本
+- `"allow"`：允许所有预发布版本
+- `"if-necessary"`：如果包的所有版本都是预发布版本，则允许预发布版本
+- `"explicit"`：允许第一方包的预发布版本，只要其版本要求中有明确的预发布标记
+- `"if-necessary-or-explicit"`：如果包的所有版本都是预发布版本，或包的版本要求中包含明确的预发布标记，则允许预发布版本
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1230,13 +1112,13 @@ declared specifiers (`if-necessary-or-explicit`).
 
 ### [`preview`](#preview) {: #preview }
 
-Whether to enable experimental, preview features.
+是否启用实验性预览功能。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1254,14 +1136,13 @@ Whether to enable experimental, preview features.
 
 ### [`publish-url`](#publish-url) {: #publish-url }
 
-The URL for publishing packages to the Python package index (by default:
-<https://upload.pypi.org/legacy/>).
+用于将包发布到 Python 包索引的 URL（默认值：<https://upload.pypi.org/legacy/>）。
 
-**Default value**: `"https://upload.pypi.org/legacy/"`
+**默认值**：`"https://upload.pypi.org/legacy/"`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1279,20 +1160,19 @@ The URL for publishing packages to the Python package index (by default:
 
 ### [`pypy-install-mirror`](#pypy-install-mirror) {: #pypy-install-mirror }
 
-Mirror URL to use for downloading managed PyPy installations.
+用于下载管理的 PyPy 安装的镜像 URL。
 
-By default, managed PyPy installations are downloaded from [downloads.python.org](https://downloads.python.org/).
-This variable can be set to a mirror URL to use a different source for PyPy installations.
-The provided URL will replace `https://downloads.python.org/pypy` in, e.g., `https://downloads.python.org/pypy/pypy3.8-v7.3.7-osx64.tar.bz2`.
+默认情况下，管理的 PyPy 安装从 [downloads.python.org](https://downloads.python.org/) 下载。
+此变量可以设置为镜像 URL，使用不同的源来下载 PyPy 安装包。
+提供的 URL 将替代 `https://downloads.python.org/pypy`，例如 `https://downloads.python.org/pypy/pypy3.8-v7.3.7-osx64.tar.bz2`。
 
-Distributions can be read from a
-local directory by using the `file://` URL scheme.
+也可以使用 `file://` URL 方案从本地目录读取发行版。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1310,17 +1190,17 @@ local directory by using the `file://` URL scheme.
 
 ### [`python-downloads`](#python-downloads) {: #python-downloads }
 
-Whether to allow Python downloads.
+是否允许 Python 下载。
 
-**Default value**: `"automatic"`
+**默认值**：`"automatic"`
 
-**Possible values**:
+**可能值**：
 
-- `"automatic"`: Automatically download managed Python installations when needed
-- `"manual"`: Do not automatically download managed Python installations; require explicit installation
-- `"never"`: Do not ever allow Python downloads
+- `"automatic"`：在需要时自动下载管理的 Python 安装
+- `"manual"`：不自动下载管理的 Python 安装；需要显式安装
+- `"never"`：绝不允许 Python 下载
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1338,19 +1218,19 @@ Whether to allow Python downloads.
 
 ### [`python-install-mirror`](#python-install-mirror) {: #python-install-mirror }
 
-Mirror URL for downloading managed Python installations.
+用于下载管理的 Python 安装的镜像 URL。
 
-By default, managed Python installations are downloaded from [`python-build-standalone`](https://github.com/indygreg/python-build-standalone).
-This variable can be set to a mirror URL to use a different source for Python installations.
-The provided URL will replace `https://github.com/indygreg/python-build-standalone/releases/download` in, e.g., `https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz`.
+默认情况下，管理的 Python 安装从 [`python-build-standalone`](https://github.com/indygreg/python-build-standalone) 下载。
+此变量可以设置为镜像 URL，使用不同的源来下载 Python 安装包。
+提供的 URL 将替代 `https://github.com/indygreg/python-build-standalone/releases/download`，例如 `https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz`。
 
-Distributions can be read from a local directory by using the `file://` URL scheme.
+也可以使用 `file://` URL 方案从本地目录读取发行版。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1368,19 +1248,18 @@ Distributions can be read from a local directory by using the `file://` URL sche
 
 ### [`python-preference`](#python-preference) {: #python-preference }
 
-Whether to prefer using Python installations that are already present on the system, or
-those that are downloaded and installed by uv.
+是否优先使用已安装在系统上的 Python 环境，还是优先使用由 uv 下载并安装的 Python 环境。
 
-**Default value**: `"managed"`
+**默认值**：`"managed"`
 
-**Possible values**:
+**可能值**：
 
-- `"only-managed"`: Only use managed Python installations; never use system Python installations
-- `"managed"`: Prefer managed Python installations over system Python installations
-- `"system"`: Prefer system Python installations over managed Python installations
-- `"only-system"`: Only use system Python installations; never use managed Python installations
+- `"only-managed"`：仅使用管理的 Python 安装；绝不使用系统 Python 安装
+- `"managed"`：优先使用管理的 Python 安装，而非系统 Python 安装
+- `"system"`：优先使用系统 Python 安装，而非管理的 Python 安装
+- `"only-system"`：仅使用系统 Python 安装；绝不使用管理的 Python 安装
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1398,13 +1277,13 @@ those that are downloaded and installed by uv.
 
 ### [`reinstall`](#reinstall) {: #reinstall }
 
-Reinstall all packages, regardless of whether they're already installed. Implies `refresh`.
+重新安装所有包，不管它们是否已经安装。此设置意味着会执行 `refresh` 操作。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1422,14 +1301,13 @@ Reinstall all packages, regardless of whether they're already installed. Implies
 
 ### [`reinstall-package`](#reinstall-package) {: #reinstall-package }
 
-Reinstall a specific package, regardless of whether it's already installed. Implies
-`refresh-package`.
+重新安装指定的包，不管它是否已经安装。此设置意味着会执行 `refresh-package` 操作。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1447,20 +1325,19 @@ Reinstall a specific package, regardless of whether it's already installed. Impl
 
 ### [`resolution`](#resolution) {: #resolution }
 
-The strategy to use when selecting between the different compatible versions for a given
-package requirement.
+选择满足给定包需求的多个兼容版本时使用的策略。
 
-By default, uv will use the latest compatible version of each package (`highest`).
+默认情况下，uv 将使用每个包的最新兼容版本（`highest`）。
 
-**Default value**: `"highest"`
+**默认值**：`"highest"`
 
-**Possible values**:
+**可能值**：
 
-- `"highest"`: Resolve the highest compatible version of each package
-- `"lowest"`: Resolve the lowest compatible version of each package
-- `"lowest-direct"`: Resolve the lowest compatible version of any direct dependencies, and the highest compatible version of any transitive dependencies
+- `"highest"`：解析每个包的最高兼容版本
+- `"lowest"`：解析每个包的最低兼容版本
+- `"lowest-direct"`：解析所有直接依赖项的最低兼容版本，并解析所有传递依赖项的最高兼容版本
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1478,17 +1355,15 @@ By default, uv will use the latest compatible version of each package (`highest`
 
 ### [`trusted-publishing`](#trusted-publishing) {: #trusted-publishing }
 
-Configure trusted publishing via GitHub Actions.
+通过 GitHub Actions 配置受信任的发布。
 
-By default, uv checks for trusted publishing when running in GitHub Actions, but ignores it
-if it isn't configured or the workflow doesn't have enough permissions (e.g., a pull request
-from a fork).
+默认情况下，uv 在 GitHub Actions 中运行时会检查是否为受信任的发布，但如果未配置或工作流没有足够的权限（例如来自分支的拉取请求），则会忽略此设置。
 
-**Default value**: `automatic`
+**默认值**：`automatic`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1506,13 +1381,13 @@ from a fork).
 
 ### [`upgrade`](#upgrade) {: #upgrade }
 
-Allow package upgrades, ignoring pinned versions in any existing output file.
+允许包的升级，忽略任何现有输出文件中固定的版本。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1530,16 +1405,15 @@ Allow package upgrades, ignoring pinned versions in any existing output file.
 
 ### [`upgrade-package`](#upgrade-package) {: #upgrade-package }
 
-Allow upgrades for a specific package, ignoring pinned versions in any existing output
-file.
+允许特定包的升级，忽略任何现有输出文件中固定的版本。
 
-Accepts both standalone package names (`ruff`) and version specifiers (`ruff<0.5.0`).
+接受独立的包名称（例如 `ruff`）和版本说明符（例如 `ruff<0.5.0`）。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1557,23 +1431,22 @@ Accepts both standalone package names (`ruff`) and version specifiers (`ruff<0.5
 
 ### `pip`
 
-Settings that are specific to the `uv pip` command-line interface.
+特定于 `uv pip` 命令行界面的设置。
 
-These values will be ignored when running commands outside the `uv pip` namespace (e.g.,
-`uv lock`, `uvx`).
+当运行 `uv pip` 命令以外的命令时（例如 `uv lock`，`uvx`），这些值将被忽略。
 
 #### [`all-extras`](#pip_all-extras) {: #pip_all-extras }
 <span id="all-extras"></span>
 
-Include all optional dependencies.
+包含所有可选依赖项。
 
-Only applies to `pyproject.toml`, `setup.py`, and `setup.cfg` sources.
+仅适用于 `pyproject.toml`、`setup.py` 和 `setup.cfg` 文件来源。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1593,14 +1466,13 @@ Only applies to `pyproject.toml`, `setup.py`, and `setup.cfg` sources.
 #### [`allow-empty-requirements`](#pip_allow-empty-requirements) {: #pip_allow-empty-requirements }
 <span id="allow-empty-requirements"></span>
 
-Allow `uv pip sync` with empty requirements, which will clear the environment of all
-packages.
+允许 `uv pip sync` 使用空的依赖项，这将清空环境中的所有包。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1620,17 +1492,16 @@ packages.
 #### [`annotation-style`](#pip_annotation-style) {: #pip_annotation-style }
 <span id="annotation-style"></span>
 
-The style of the annotation comments included in the output file, used to indicate the
-source of each package.
+输出文件中注释的风格，用于指示每个包的来源。
 
-**Default value**: `"split"`
+**默认值**：`"split"`
 
-**Possible values**:
+**可能的值**：
 
-- `"line"`: Render the annotations on a single, comma-separated line
-- `"split"`: Render each annotation on its own line
+- `"line"`：将注释放在单行，并用逗号分隔
+- `"split"`：将每个注释放在单独的行上
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1650,18 +1521,15 @@ source of each package.
 #### [`break-system-packages`](#pip_break-system-packages) {: #pip_break-system-packages }
 <span id="break-system-packages"></span>
 
-Allow uv to modify an `EXTERNALLY-MANAGED` Python installation.
+允许 uv 修改 `EXTERNALLY-MANAGED` 的 Python 安装。
 
-WARNING: `--break-system-packages` is intended for use in continuous integration (CI)
-environments, when installing into Python installations that are managed by an external
-package manager, like `apt`. It should be used with caution, as such Python installations
-explicitly recommend against modifications by other package managers (like uv or pip).
+警告：`--break-system-packages` 用于持续集成（CI）环境中，当安装到由外部包管理器（如 `apt`）管理的 Python 安装时使用。应谨慎使用，因为此类 Python 安装明确推荐不允许其他包管理器（如 uv 或 pip）进行修改。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1681,22 +1549,17 @@ explicitly recommend against modifications by other package managers (like uv or
 #### [`compile-bytecode`](#pip_compile-bytecode) {: #pip_compile-bytecode }
 <span id="compile-bytecode"></span>
 
-Compile Python files to bytecode after installation.
+安装后编译 Python 文件为字节码。
 
-By default, uv does not compile Python (`.py`) files to bytecode (`__pycache__/*.pyc`);
-instead, compilation is performed lazily the first time a module is imported. For use-cases
-in which start time is critical, such as CLI applications and Docker containers, this option
-can be enabled to trade longer installation times for faster start times.
+默认情况下，uv 不会将 Python（`.py`）文件编译为字节码（`__pycache__/*.pyc`）；相反，编译会在第一次导入模块时懒加载执行。对于那些启动时间关键的使用场景（如 CLI 应用程序和 Docker 容器），可以启用此选项，将更长的安装时间换取更快的启动时间。
 
-When enabled, uv will process the entire site-packages directory (including packages that
-are not being modified by the current operation) for consistency. Like pip, it will also
-ignore errors.
+启用后，uv 会处理整个 `site-packages` 目录（包括当前操作未修改的包）以保证一致性。像 pip 一样，它也会忽略错误。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1716,14 +1579,13 @@ ignore errors.
 #### [`config-settings`](#pip_config-settings) {: #pip_config-settings }
 <span id="config-settings"></span>
 
-Settings to pass to the [PEP 517](https://peps.python.org/pep-0517/) build backend,
-specified as `KEY=VALUE` pairs.
+传递给 [PEP 517](https://peps.python.org/pep-0517/) 构建后端的设置，指定为 `KEY=VALUE` 键值对。
 
-**Default value**: `{}`
+**默认值**：`{}`
 
-**Type**: `dict`
+**类型**：`dict`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1743,15 +1605,15 @@ specified as `KEY=VALUE` pairs.
 #### [`custom-compile-command`](#pip_custom-compile-command) {: #pip_custom-compile-command }
 <span id="custom-compile-command"></span>
 
-The header comment to include at the top of the output file generated by `uv pip compile`.
+在 `uv pip compile` 生成的输出文件顶部包含的头部注释。
 
-Used to reflect custom build scripts and commands that wrap `uv pip compile`.
+用于反映自定义构建脚本和命令，这些脚本和命令包装了 `uv pip compile`。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1771,25 +1633,21 @@ Used to reflect custom build scripts and commands that wrap `uv pip compile`.
 #### [`dependency-metadata`](#pip_dependency-metadata) {: #pip_dependency-metadata }
 <span id="dependency-metadata"></span>
 
-Pre-defined static metadata for dependencies of the project (direct or transitive). When
-provided, enables the resolver to use the specified metadata instead of querying the
-registry or building the relevant package from source.
+项目依赖项（直接或传递依赖项）的预定义静态元数据。当提供时，解析器将使用指定的元数据，而不是查询注册表或从源代码构建相关包。
 
-Metadata should be provided in adherence with the [Metadata 2.3](https://packaging.python.org/en/latest/specifications/core-metadata/)
-standard, though only the following fields are respected:
+元数据应符合 [Metadata 2.3](https://packaging.python.org/en/latest/specifications/core-metadata/) 标准，但仅以下字段会被尊重：
 
-- `name`: The name of the package.
-- (Optional) `version`: The version of the package. If omitted, the metadata will be applied
-  to all versions of the package.
-- (Optional) `requires-dist`: The dependencies of the package (e.g., `werkzeug>=0.14`).
-- (Optional) `requires-python`: The Python version required by the package (e.g., `>=3.10`).
-- (Optional) `provides-extras`: The extras provided by the package.
+- `name`: 包的名称。
+- （可选）`version`: 包的版本。如果省略，元数据将应用于该包的所有版本。
+- （可选）`requires-dist`: 包的依赖项（例如，`werkzeug>=0.14`）。
+- （可选）`requires-python`: 包所需的 Python 版本（例如，`>=3.10`）。
+- （可选）`provides-extras`: 包提供的扩展。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[dict]`
+**类型**：`list[dict]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1813,13 +1671,13 @@ standard, though only the following fields are respected:
 #### [`emit-build-options`](#pip_emit-build-options) {: #pip_emit-build-options }
 <span id="emit-build-options"></span>
 
-Include `--no-binary` and `--only-binary` entries in the output file generated by `uv pip compile`.
+在 `uv pip compile` 生成的输出文件中包含 `--no-binary` 和 `--only-binary` 条目。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1839,13 +1697,13 @@ Include `--no-binary` and `--only-binary` entries in the output file generated b
 #### [`emit-find-links`](#pip_emit-find-links) {: #pip_emit-find-links }
 <span id="emit-find-links"></span>
 
-Include `--find-links` entries in the output file generated by `uv pip compile`.
+在 `uv pip compile` 生成的输出文件中包含 `--find-links` 条目。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1865,14 +1723,13 @@ Include `--find-links` entries in the output file generated by `uv pip compile`.
 #### [`emit-index-annotation`](#pip_emit-index-annotation) {: #pip_emit-index-annotation }
 <span id="emit-index-annotation"></span>
 
-Include comment annotations indicating the index used to resolve each package (e.g.,
-`# from https://pypi.org/simple`).
+在输出文件中包含注释，指示用于解析每个包的索引（例如，`# 来自 https://pypi.org/simple`）。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1892,13 +1749,13 @@ Include comment annotations indicating the index used to resolve each package (e
 #### [`emit-index-url`](#pip_emit-index-url) {: #pip_emit-index-url }
 <span id="emit-index-url"></span>
 
-Include `--index-url` and `--extra-index-url` entries in the output file generated by `uv pip compile`.
+在 `uv pip compile` 生成的输出文件中包含 `--index-url` 和 `--extra-index-url` 条目。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1918,18 +1775,15 @@ Include `--index-url` and `--extra-index-url` entries in the output file generat
 #### [`emit-marker-expression`](#pip_emit-marker-expression) {: #pip_emit-marker-expression }
 <span id="emit-marker-expression"></span>
 
-Whether to emit a marker string indicating the conditions under which the set of pinned
-dependencies is valid.
+是否输出一个标记字符串，指示在什么条件下，固定的依赖集合是有效的。
 
-The pinned dependencies may be valid even when the marker expression is
-false, but when the expression is true, the requirements are known to
-be correct.
+即使标记表达式为假，固定的依赖项也可能有效，但当表达式为真时，要求被认为是正确的。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1949,17 +1803,15 @@ be correct.
 #### [`exclude-newer`](#pip_exclude-newer) {: #pip_exclude-newer }
 <span id="exclude-newer"></span>
 
-Limit candidate packages to those that were uploaded prior to the given date.
+将候选包限制为在给定日期之前上传的包。
 
-Accepts both [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339.html) timestamps (e.g.,
-`2006-12-02T02:07:43Z`) and local dates in the same format (e.g., `2006-12-02`) in your
-system's configured time zone.
+接受 [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339.html) 时间戳（例如，`2006-12-02T02:07:43Z`）以及在系统配置时区下的本地日期（例如，`2006-12-02`）。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -1979,15 +1831,15 @@ system's configured time zone.
 #### [`extra`](#pip_extra) {: #pip_extra }
 <span id="extra"></span>
 
-Include optional dependencies from the specified extra; may be provided more than once.
+包括来自指定额外项的可选依赖项；可以多次提供。
 
-Only applies to `pyproject.toml`, `setup.py`, and `setup.cfg` sources.
+仅适用于 `pyproject.toml`、`setup.py` 和 `setup.cfg` 源。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2007,22 +1859,19 @@ Only applies to `pyproject.toml`, `setup.py`, and `setup.cfg` sources.
 #### [`extra-index-url`](#pip_extra-index-url) {: #pip_extra-index-url }
 <span id="extra-index-url"></span>
 
-Extra URLs of package indexes to use, in addition to `--index-url`.
+除了 `--index-url` 之外，还可以使用的额外包索引 URL。
 
-Accepts either a repository compliant with [PEP 503](https://peps.python.org/pep-0503/)
-(the simple repository API), or a local directory laid out in the same format.
+接受符合 [PEP 503](https://peps.python.org/pep-0503/)（简单仓库 API）规范的仓库，或按照相同格式组织的本地目录。
 
-All indexes provided via this flag take priority over the index specified by
-[`index_url`](#index-url). When multiple indexes are provided, earlier values take priority.
+所有通过此标志提供的索引优先级高于 [`index_url`](#index-url) 指定的索引。当提供多个索引时，较早的值具有更高优先级。
 
-To control uv's resolution strategy when multiple indexes are present, see
-[`index_strategy`](#index-strategy).
+要控制 uv 在多个索引存在时的解析策略，请参见 [`index-strategy`](#index-strategy)。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2042,20 +1891,17 @@ To control uv's resolution strategy when multiple indexes are present, see
 #### [`find-links`](#pip_find-links) {: #pip_find-links }
 <span id="find-links"></span>
 
-Locations to search for candidate distributions, in addition to those found in the registry
-indexes.
+除了注册表索引中找到的包外，还要搜索候选分发的其他位置。
 
-If a path, the target must be a directory that contains packages as wheel files (`.whl`) or
-source distributions (e.g., `.tar.gz` or `.zip`) at the top level.
+如果是路径，目标必须是包含顶层的 wheel 文件（`.whl`）或源代码分发文件（例如 `.tar.gz` 或 `.zip`）的目录。
 
-If a URL, the page must contain a flat list of links to package files adhering to the
-formats described above.
+如果是 URL，页面必须包含指向符合上述格式的包文件的平面链接列表。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2075,13 +1921,13 @@ formats described above.
 #### [`generate-hashes`](#pip_generate-hashes) {: #pip_generate-hashes }
 <span id="generate-hashes"></span>
 
-Include distribution hashes in the output file.
+在输出文件中包含分发哈希。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2101,22 +1947,19 @@ Include distribution hashes in the output file.
 #### [`index-strategy`](#pip_index-strategy) {: #pip_index-strategy }
 <span id="index-strategy"></span>
 
-The strategy to use when resolving against multiple index URLs.
+解析多个索引 URL 时使用的策略。
 
-By default, uv will stop at the first index on which a given package is available, and
-limit resolutions to those present on that first index (`first-match`). This prevents
-"dependency confusion" attacks, whereby an attacker can upload a malicious package under the
-same name to an alternate index.
+默认情况下，uv 会在第一个索引上找到给定包时停止，并将解析限制在该索引中的包（`first-match`）。这可以防止“依赖混淆”攻击，即攻击者可以将恶意包以相同的名称上传到另一个索引中。
 
-**Default value**: `"first-index"`
+**默认值**：`"first-index"`
 
-**Possible values**:
+**可能的值**：
 
-- `"first-index"`: Only use results from the first index that returns a match for a given package name
-- `"unsafe-first-match"`: Search for every package name across all indexes, exhausting the versions from the first index before moving on to the next
-- `"unsafe-best-match"`: Search for every package name across all indexes, preferring the "best" version found. If a package version is in multiple indexes, only look at the entry for the first index
+- `"first-index"`：仅使用第一个返回匹配结果的索引中的包
+- `"unsafe-first-match"`：在所有索引中查找每个包的名称，在继续查找下一个索引之前，首先用完第一个索引中的版本
+- `"unsafe-best-match"`：在所有索引中查找每个包的名称，优先选择找到的“最佳”版本。如果一个包版本在多个索引中都有，仅查看第一个索引中的条目
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2136,19 +1979,17 @@ same name to an alternate index.
 #### [`index-url`](#pip_index-url) {: #pip_index-url }
 <span id="index-url"></span>
 
-The URL of the Python package index (by default: <https://pypi.org/simple>).
+Python 包索引的 URL（默认值：<https://pypi.org/simple>）。
 
-Accepts either a repository compliant with [PEP 503](https://peps.python.org/pep-0503/)
-(the simple repository API), or a local directory laid out in the same format.
+接受符合 [PEP 503](https://peps.python.org/pep-0503/)（简单仓库 API）规范的仓库，或按照相同格式组织的本地目录。
 
-The index provided by this setting is given lower priority than any indexes specified via
-[`extra_index_url`](#extra-index-url).
+此设置提供的索引优先级低于通过 [`extra_index_url`](#extra-index-url) 指定的任何索引。
 
-**Default value**: `"https://pypi.org/simple"`
+**默认值**：`"https://pypi.org/simple"`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2168,16 +2009,15 @@ The index provided by this setting is given lower priority than any indexes spec
 #### [`keyring-provider`](#pip_keyring-provider) {: #pip_keyring-provider }
 <span id="keyring-provider"></span>
 
-Attempt to use `keyring` for authentication for index URLs.
+尝试使用 `keyring` 进行索引 URL 的身份验证。
 
-At present, only `--keyring-provider subprocess` is supported, which configures uv to
-use the `keyring` CLI to handle authentication.
+目前，仅支持 `--keyring-provider subprocess`，它将配置 uv 使用 `keyring` CLI 进行身份验证处理。
 
-**Default value**: `disabled`
+**默认值**：`disabled`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2197,21 +2037,20 @@ use the `keyring` CLI to handle authentication.
 #### [`link-mode`](#pip_link-mode) {: #pip_link-mode }
 <span id="link-mode"></span>
 
-The method to use when installing packages from the global cache.
+从全局缓存安装包时使用的方法。
 
-Defaults to `clone` (also known as Copy-on-Write) on macOS, and `hardlink` on Linux and
-Windows.
+在 macOS 上默认为 `clone`（也称为写时复制），在 Linux 和 Windows 上默认为 `hardlink`。
 
-**Default value**: `"clone" (macOS) or "hardlink" (Linux, Windows)`
+**默认值**：`"clone" (macOS) 或 "hardlink" (Linux, Windows)`
 
-**Possible values**:
+**可能的值**：
 
-- `"clone"`: Clone (i.e., copy-on-write) packages from the wheel into the `site-packages` directory
-- `"copy"`: Copy packages from the wheel into the `site-packages` directory
-- `"hardlink"`: Hard link packages from the wheel into the `site-packages` directory
-- `"symlink"`: Symbolically link packages from the wheel into the `site-packages` directory
+- `"clone"`：从 wheel 中克隆（即写时复制）包到 `site-packages` 目录
+- `"copy"`：将包从 wheel 复制到 `site-packages` 目录
+- `"hardlink"`：从 wheel 创建硬链接到 `site-packages` 目录
+- `"symlink"`：从 wheel 创建符号链接到 `site-packages` 目录
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2231,14 +2070,13 @@ Windows.
 #### [`no-annotate`](#pip_no-annotate) {: #pip_no-annotate }
 <span id="no-annotate"></span>
 
-Exclude comment annotations indicating the source of each package from the output file
-generated by `uv pip compile`.
+从 `uv pip compile` 生成的输出文件中排除注释注解，注解用于指示每个包的来源。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2258,19 +2096,17 @@ generated by `uv pip compile`.
 #### [`no-binary`](#pip_no-binary) {: #pip_no-binary }
 <span id="no-binary"></span>
 
-Don't install pre-built wheels.
+不安装预构建的 wheel 包。
 
-The given packages will be built and installed from source. The resolver will still use
-pre-built wheels to extract package metadata, if available.
+指定的包将从源代码构建并安装。如果有可用的预构建 wheel 包，解析器仍会使用它们来提取包的元数据。
 
-Multiple packages may be provided. Disable binaries for all packages with `:all:`.
-Clear previously specified packages with `:none:`.
+可以提供多个包。通过 `:all:` 禁用所有包的二进制文件。通过 `:none:` 清除先前指定的包。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2290,19 +2126,17 @@ Clear previously specified packages with `:none:`.
 #### [`no-build`](#pip_no-build) {: #pip_no-build }
 <span id="no-build"></span>
 
-Don't build source distributions.
+不构建源代码分发包。
 
-When enabled, resolving will not run arbitrary Python code. The cached wheels of
-already-built source distributions will be reused, but operations that require building
-distributions will exit with an error.
+启用时，解析过程中不会运行任意的 Python 代码。已经构建好的源代码分发包的缓存 wheel 将被重用，但需要构建分发包的操作将会报错退出。
 
-Alias for `--only-binary :all:`.
+这是 `--only-binary :all:` 的别名。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2322,16 +2156,15 @@ Alias for `--only-binary :all:`.
 #### [`no-build-isolation`](#pip_no-build-isolation) {: #pip_no-build-isolation }
 <span id="no-build-isolation"></span>
 
-Disable isolation when building source distributions.
+在构建源代码分发包时禁用隔离。
 
-Assumes that build dependencies specified by [PEP 518](https://peps.python.org/pep-0518/)
-are already installed.
+假设已经安装了由 [PEP 518](https://peps.python.org/pep-0518/) 指定的构建依赖项。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2351,16 +2184,15 @@ are already installed.
 #### [`no-build-isolation-package`](#pip_no-build-isolation-package) {: #pip_no-build-isolation-package }
 <span id="no-build-isolation-package"></span>
 
-Disable isolation when building source distributions for a specific package.
+在为特定包构建源代码分发包时禁用隔离。
 
-Assumes that the packages' build dependencies specified by [PEP 518](https://peps.python.org/pep-0518/)
-are already installed.
+假设该包的构建依赖项已由 [PEP 518](https://peps.python.org/pep-0518/) 指定并且已经安装。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2380,14 +2212,13 @@ are already installed.
 #### [`no-deps`](#pip_no-deps) {: #pip_no-deps }
 <span id="no-deps"></span>
 
-Ignore package dependencies, instead only add those packages explicitly listed
-on the command line to the resulting the requirements file.
+忽略包的依赖项，仅将命令行上明确列出的包添加到生成的要求文件中。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2407,14 +2238,13 @@ on the command line to the resulting the requirements file.
 #### [`no-emit-package`](#pip_no-emit-package) {: #pip_no-emit-package }
 <span id="no-emit-package"></span>
 
-Specify a package to omit from the output resolution. Its dependencies will still be
-included in the resolution. Equivalent to pip-compile's `--unsafe-package` option.
+指定一个包，从输出解析结果中省略该包。它的依赖项仍会包含在解析结果中。相当于 pip-compile 的 `--unsafe-package` 选项。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2434,13 +2264,13 @@ included in the resolution. Equivalent to pip-compile's `--unsafe-package` optio
 #### [`no-extra`](#pip_no-extra) {: #pip_no-extra }
 <span id="no-extra"></span>
 
-Exclude the specified optional dependencies if `all-extras` is supplied.
+如果提供了 `all-extras`，则排除指定的可选依赖项。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2462,13 +2292,13 @@ Exclude the specified optional dependencies if `all-extras` is supplied.
 #### [`no-header`](#pip_no-header) {: #pip_no-header }
 <span id="no-header"></span>
 
-Exclude the comment header at the top of output file generated by `uv pip compile`.
+在 `uv pip compile` 生成的输出文件中排除注释头部。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2488,14 +2318,13 @@ Exclude the comment header at the top of output file generated by `uv pip compil
 #### [`no-index`](#pip_no-index) {: #pip_no-index }
 <span id="no-index"></span>
 
-Ignore all registry indexes (e.g., PyPI), instead relying on direct URL dependencies and
-those provided via `--find-links`.
+忽略所有注册表索引（例如 PyPI），仅依赖直接的 URL 依赖项和通过 `--find-links` 提供的依赖项。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2515,15 +2344,13 @@ those provided via `--find-links`.
 #### [`no-sources`](#pip_no-sources) {: #pip_no-sources }
 <span id="no-sources"></span>
 
-Ignore the `tool.uv.sources` table when resolving dependencies. Used to lock against the
-standards-compliant, publishable package metadata, as opposed to using any local or Git
-sources.
+在解析依赖项时忽略 `tool.uv.sources` 表。用于锁定符合标准、可发布的包元数据，而不是使用任何本地或 Git 源。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2543,17 +2370,15 @@ sources.
 #### [`no-strip-extras`](#pip_no-strip-extras) {: #pip_no-strip-extras }
 <span id="no-strip-extras"></span>
 
-Include extras in the output file.
+在输出文件中包含额外依赖项（extras）。
 
-By default, uv strips extras, as any packages pulled in by the extras are already included
-as dependencies in the output file directly. Further, output files generated with
-`--no-strip-extras` cannot be used as constraints files in `install` and `sync` invocations.
+默认情况下，uv 会剥离额外依赖项，因为由 extras 引入的任何包已经作为依赖项直接包含在输出文件中。此外，使用 `--no-strip-extras` 生成的输出文件不能在 `install` 和 `sync` 调用中用作约束文件。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2573,16 +2398,15 @@ as dependencies in the output file directly. Further, output files generated wit
 #### [`no-strip-markers`](#pip_no-strip-markers) {: #pip_no-strip-markers }
 <span id="no-strip-markers"></span>
 
-Include environment markers in the output file generated by `uv pip compile`.
+在 `uv pip compile` 生成的输出文件中包含环境标记。
 
-By default, uv strips environment markers, as the resolution generated by `compile` is
-only guaranteed to be correct for the target environment.
+默认情况下，uv 会去除环境标记，因为 `compile` 生成的解析结果仅在目标环境下被保证是正确的。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2602,20 +2426,17 @@ only guaranteed to be correct for the target environment.
 #### [`only-binary`](#pip_only-binary) {: #pip_only-binary }
 <span id="only-binary"></span>
 
-Only use pre-built wheels; don't build source distributions.
+仅使用预构建的 wheel 文件，不构建源代码分发包。
 
-When enabled, resolving will not run code from the given packages. The cached wheels of already-built
-source distributions will be reused, but operations that require building distributions will
-exit with an error.
+启用时，解析将不会运行给定包中的代码。已构建的源代码分发包的缓存 wheel 将被重用，但需要构建分发包的操作将以错误退出。
 
-Multiple packages may be provided. Disable binaries for all packages with `:all:`.
-Clear previously specified packages with `:none:`.
+可以提供多个包。通过 `:all:` 禁用所有包的二进制文件。通过 `:none:` 清除之前指定的包。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2635,16 +2456,15 @@ Clear previously specified packages with `:none:`.
 #### [`output-file`](#pip_output-file) {: #pip_output-file }
 <span id="output-file"></span>
 
-Write the requirements generated by `uv pip compile` to the given `requirements.txt` file.
+将 `uv pip compile` 生成的要求写入指定的 `requirements.txt` 文件。
 
-If the file already exists, the existing versions will be preferred when resolving
-dependencies, unless `--upgrade` is also specified.
+如果文件已存在，解析时将优先使用现有版本，除非同时指定了 `--upgrade`。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2664,19 +2484,15 @@ dependencies, unless `--upgrade` is also specified.
 #### [`prefix`](#pip_prefix) {: #pip_prefix }
 <span id="prefix"></span>
 
-Install packages into `lib`, `bin`, and other top-level folders under the specified
-directory, as if a virtual environment were present at that location.
+将包安装到指定目录下的 `lib`、`bin` 和其他顶级文件夹中，类似于在该位置存在虚拟环境。
 
-In general, prefer the use of `--python` to install into an alternate environment, as
-scripts and other artifacts installed via `--prefix` will reference the installing
-interpreter, rather than any interpreter added to the `--prefix` directory, rendering them
-non-portable.
+通常，建议使用 `--python` 选项将包安装到其他环境中，因为通过 `--prefix` 安装的脚本和其他工件将引用安装时使用的解释器，而不是任何添加到 `--prefix` 目录中的解释器，这样会导致它们变得不可移植。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2696,23 +2512,21 @@ non-portable.
 #### [`prerelease`](#pip_prerelease) {: #pip_prerelease }
 <span id="prerelease"></span>
 
-The strategy to use when considering pre-release versions.
+在考虑预发布版本时使用的策略。
 
-By default, uv will accept pre-releases for packages that _only_ publish pre-releases,
-along with first-party requirements that contain an explicit pre-release marker in the
-declared specifiers (`if-necessary-or-explicit`).
+默认情况下，uv 将接受仅发布预发布版本的包，以及那些在声明的规格中明确标记为预发布的第一方要求（`if-necessary-or-explicit`）。
 
-**Default value**: `"if-necessary-or-explicit"`
+**默认值**：`"if-necessary-or-explicit"`
 
-**Possible values**:
+**可能的值**：
 
-- `"disallow"`: Disallow all pre-release versions
-- `"allow"`: Allow all pre-release versions
-- `"if-necessary"`: Allow pre-release versions if all versions of a package are pre-release
-- `"explicit"`: Allow pre-release versions for first-party packages with explicit pre-release markers in their version requirements
-- `"if-necessary-or-explicit"`: Allow pre-release versions if all versions of a package are pre-release, or if the package has an explicit pre-release marker in its version requirements
+- `"disallow"`：不允许任何预发布版本
+- `"allow"`：允许所有预发布版本
+- `"if-necessary"`：如果某包的所有版本都是预发布版本，则允许预发布版本
+- `"explicit"`：允许具有明确预发布版本标记的第一方包的预发布版本
+- `"if-necessary-or-explicit"`：如果某包的所有版本都是预发布版本，或者该包的版本要求中有明确的预发布标记，则允许预发布版本
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2732,24 +2546,20 @@ declared specifiers (`if-necessary-or-explicit`).
 #### [`python`](#pip_python) {: #pip_python }
 <span id="python"></span>
 
-The Python interpreter into which packages should be installed.
+指定包应安装到的 Python 解释器。
 
-By default, uv installs into the virtual environment in the current working directory or
-any parent directory. The `--python` option allows you to specify a different interpreter,
-which is intended for use in continuous integration (CI) environments or other automated
-workflows.
+默认情况下，uv 将安装到当前工作目录或任何父目录中的虚拟环境中。`--python` 选项允许您指定不同的解释器，主要用于持续集成（CI）环境或其他自动化工作流中。
 
-Supported formats:
-- `3.10` looks for an installed Python 3.10 in the registry on Windows (see
-  `py --list-paths`), or `python3.10` on Linux and macOS.
-- `python3.10` or `python.exe` looks for a binary with the given name in `PATH`.
-- `/home/ferris/.local/bin/python3.10` uses the exact Python at the given path.
+支持的格式：
+- `3.10`：在 Windows 的注册表中查找安装的 Python 3.10（参见 `py --list-paths`），或者在 Linux 和 macOS 上查找 `python3.10`。
+- `python3.10` 或 `python.exe`：在 `PATH` 中查找具有给定名称的二进制文件。
+- `/home/ferris/.local/bin/python3.10`：使用给定路径的确切 Python 解释器。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2769,17 +2579,15 @@ Supported formats:
 #### [`python-platform`](#pip_python-platform) {: #pip_python-platform }
 <span id="python-platform"></span>
 
-The platform for which requirements should be resolved.
+指定要解析的要求所针对的平台。
 
-Represented as a "target triple", a string that describes the target platform in terms of
-its CPU, vendor, and operating system name, like `x86_64-unknown-linux-gnu` or
-`aarch64-apple-darwin`.
+以“目标三元组”的形式表示，这是一个描述目标平台的字符串，通常包括其 CPU、厂商和操作系统名称，例如 `x86_64-unknown-linux-gnu` 或 `aarch64-apple-darwin`。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2799,17 +2607,15 @@ its CPU, vendor, and operating system name, like `x86_64-unknown-linux-gnu` or
 #### [`python-version`](#pip_python-version) {: #pip_python-version }
 <span id="python-version"></span>
 
-The minimum Python version that should be supported by the resolved requirements (e.g.,
-`3.8` or `3.8.17`).
+解析的要求应支持的最低 Python 版本（例如，`3.8` 或 `3.8.17`）。
 
-If a patch version is omitted, the minimum patch version is assumed. For example, `3.8` is
-mapped to `3.8.0`.
+如果省略了补丁版本，则假定最低补丁版本。例如，`3.8` 将映射为 `3.8.0`。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2829,13 +2635,13 @@ mapped to `3.8.0`.
 #### [`reinstall`](#pip_reinstall) {: #pip_reinstall }
 <span id="reinstall"></span>
 
-Reinstall all packages, regardless of whether they're already installed. Implies `refresh`.
+重新安装所有包，无论它们是否已安装。等同于 `refresh`。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2855,14 +2661,13 @@ Reinstall all packages, regardless of whether they're already installed. Implies
 #### [`reinstall-package`](#pip_reinstall-package) {: #pip_reinstall-package }
 <span id="reinstall-package"></span>
 
-Reinstall a specific package, regardless of whether it's already installed. Implies
-`refresh-package`.
+重新安装指定的包，无论它是否已安装。等同于 `refresh-package`。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2882,24 +2687,21 @@ Reinstall a specific package, regardless of whether it's already installed. Impl
 #### [`require-hashes`](#pip_require-hashes) {: #pip_require-hashes }
 <span id="require-hashes"></span>
 
-Require a matching hash for each requirement.
+要求每个依赖项提供匹配的哈希值。
 
-Hash-checking mode is all or nothing. If enabled, _all_ requirements must be provided
-with a corresponding hash or set of hashes. Additionally, if enabled, _all_ requirements
-must either be pinned to exact versions (e.g., `==1.0.0`), or be specified via direct URL.
+哈希检查模式是全有或全无。如果启用，则_所有_依赖项必须提供相应的哈希值或哈希值集合。此外，如果启用，_所有_依赖项必须要么固定到确切的版本（例如 `==1.0.0`），要么通过直接 URL 指定。
 
-Hash-checking mode introduces a number of additional constraints:
+哈希检查模式引入了一些附加约束：
 
-- Git dependencies are not supported.
-- Editable installs are not supported.
-- Local dependencies are not supported, unless they point to a specific wheel (`.whl`) or
-  source archive (`.zip`, `.tar.gz`), as opposed to a directory.
+- 不支持 Git 依赖项。
+- 不支持可编辑安装。
+- 不支持本地依赖项，除非它们指向特定的 wheel 文件（`.whl`）或源归档（`.zip`、`.tar.gz`），而不是一个目录。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2919,20 +2721,19 @@ Hash-checking mode introduces a number of additional constraints:
 #### [`resolution`](#pip_resolution) {: #pip_resolution }
 <span id="resolution"></span>
 
-The strategy to use when selecting between the different compatible versions for a given
-package requirement.
+选择给定包依赖项的不同兼容版本时采用的策略。
 
-By default, uv will use the latest compatible version of each package (`highest`).
+默认情况下，uv 会使用每个包的最新兼容版本（`highest`）。
 
-**Default value**: `"highest"`
+**默认值**：`"highest"`
 
-**Possible values**:
+**可选值**：
 
-- `"highest"`: Resolve the highest compatible version of each package
-- `"lowest"`: Resolve the lowest compatible version of each package
-- `"lowest-direct"`: Resolve the lowest compatible version of any direct dependencies, and the highest compatible version of any transitive dependencies
+- `"highest"`：解析每个包的最高兼容版本
+- `"lowest"`：解析每个包的最低兼容版本
+- `"lowest-direct"`：解析任何直接依赖项的最低兼容版本，和任何传递依赖项的最高兼容版本
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2952,14 +2753,13 @@ By default, uv will use the latest compatible version of each package (`highest`
 #### [`strict`](#pip_strict) {: #pip_strict }
 <span id="strict"></span>
 
-Validate the Python environment, to detect packages with missing dependencies and other
-issues.
+验证 Python 环境，以检测缺少依赖项的包和其他问题。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -2979,20 +2779,17 @@ issues.
 #### [`system`](#pip_system) {: #pip_system }
 <span id="system"></span>
 
-Install packages into the system Python environment.
+将包安装到系统 Python 环境中。
 
-By default, uv installs into the virtual environment in the current working directory or
-any parent directory. The `--system` option instructs uv to instead use the first Python
-found in the system `PATH`.
+默认情况下，uv 会安装到当前工作目录或任何父目录中的虚拟环境。`--system` 选项指示 uv 使用系统 `PATH` 中找到的第一个 Python。
 
-WARNING: `--system` is intended for use in continuous integration (CI) environments and
-should be used with caution, as it can modify the system Python installation.
+警告：`--system` 选项是为持续集成（CI）环境设计的，使用时应谨慎，因为它可能会修改系统的 Python 安装。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -3012,14 +2809,13 @@ should be used with caution, as it can modify the system Python installation.
 #### [`target`](#pip_target) {: #pip_target }
 <span id="target"></span>
 
-Install packages into the specified directory, rather than into the virtual or system Python
-environment. The packages will be installed at the top-level of the directory.
+将包安装到指定的目录，而不是安装到虚拟环境或系统 Python 环境中。包将被安装在该目录的顶层。
 
-**Default value**: `None`
+**默认值**：`None`
 
-**Type**: `str`
+**类型**：`str`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -3039,19 +2835,15 @@ environment. The packages will be installed at the top-level of the directory.
 #### [`universal`](#pip_universal) {: #pip_universal }
 <span id="universal"></span>
 
-Perform a universal resolution, attempting to generate a single `requirements.txt` output
-file that is compatible with all operating systems, architectures, and Python
-implementations.
+执行通用解析，尝试生成一个兼容所有操作系统、架构和 Python 实现的单一 `requirements.txt` 输出文件。
 
-In universal mode, the current Python version (or user-provided `--python-version`) will be
-treated as a lower bound. For example, `--universal --python-version 3.7` would produce a
-universal resolution for Python 3.7 and later.
+在通用模式下，当前的 Python 版本（或用户提供的 `--python-version`）将被视为下限。例如，`--universal --python-version 3.7` 将为 Python 3.7 及更高版本生成一个通用解析。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -3071,13 +2863,13 @@ universal resolution for Python 3.7 and later.
 #### [`upgrade`](#pip_upgrade) {: #pip_upgrade }
 <span id="upgrade"></span>
 
-Allow package upgrades, ignoring pinned versions in any existing output file.
+允许包升级，忽略任何现有输出文件中的固定版本。
 
-**Default value**: `false`
+**默认值**：`false`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -3097,16 +2889,15 @@ Allow package upgrades, ignoring pinned versions in any existing output file.
 #### [`upgrade-package`](#pip_upgrade-package) {: #pip_upgrade-package }
 <span id="upgrade-package"></span>
 
-Allow upgrades for a specific package, ignoring pinned versions in any existing output
-file.
+允许特定包的升级，忽略任何现有输出文件中的固定版本。
 
-Accepts both standalone package names (`ruff`) and version specifiers (`ruff<0.5.0`).
+接受独立的包名称（`ruff`）和版本说明符（`ruff<0.5.0`）。
 
-**Default value**: `[]`
+**默认值**：`[]`
 
-**Type**: `list[str]`
+**类型**：`list[str]`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 
@@ -3126,17 +2917,15 @@ Accepts both standalone package names (`ruff`) and version specifiers (`ruff<0.5
 #### [`verify-hashes`](#pip_verify-hashes) {: #pip_verify-hashes }
 <span id="verify-hashes"></span>
 
-Validate any hashes provided in the requirements file.
+验证在依赖文件中提供的哈希值。
 
-Unlike `--require-hashes`, `--verify-hashes` does not require that all requirements have
-hashes; instead, it will limit itself to verifying the hashes of those requirements that do
-include them.
+与 `--require-hashes` 不同，`--verify-hashes` 不要求所有依赖项都有哈希值；相反，它将仅验证那些包含哈希值的依赖项。
 
-**Default value**: `true`
+**默认值**：`true`
 
-**Type**: `bool`
+**类型**：`bool`
 
-**Example usage**:
+**示例用法**：
 
 === "pyproject.toml"
 

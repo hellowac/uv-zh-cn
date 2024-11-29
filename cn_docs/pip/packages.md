@@ -1,121 +1,119 @@
-# Managing packages
+# 管理包
 
-## Installing a package
+## 安装包
 
-To install a package into the virtual environment, e.g., Flask:
+要将包安装到虚拟环境中，例如安装 Flask：
 
 ```console
 $ uv pip install flask
 ```
 
-To install a package with optional dependencies enabled, e.g., Flask with the "dotenv" extra:
+要启用可选依赖项安装包，例如安装带有 "dotenv" 附加项的 Flask：
 
 ```console
 $ uv pip install "flask[dotenv]"
 ```
 
-To install multiple packages, e.g., Flask and Ruff:
+要一次安装多个包，例如安装 Flask 和 Ruff：
 
 ```console
 $ uv pip install flask ruff
 ```
 
-To install a package with a constraint, e.g., Ruff v0.2.0 or newer:
+要安装带有约束的包，例如安装 v0.2.0 或更新版本的 Ruff：
 
 ```console
 $ uv pip install 'ruff>=0.2.0'
 ```
 
-To install a package at a specific version, e.g., Ruff v0.3.0:
+要安装特定版本的包，例如安装 v0.3.0 版本的 Ruff：
 
 ```console
 $ uv pip install 'ruff==0.3.0'
 ```
 
-To install a package from the disk:
+要从本地磁盘安装包：
 
 ```console
 $ uv pip install "ruff @ ./projects/ruff"
 ```
 
-To install a package from GitHub:
+要从 GitHub 安装包：
 
 ```console
 $ uv pip install "git+https://github.com/astral-sh/ruff"
 ```
 
-To install a package from GitHub at a specific reference:
+要从 GitHub 安装特定引用的包：
 
 ```console
-$ # Install a tag
+$ # 安装某个标签
 $ uv pip install "git+https://github.com/astral-sh/ruff@v0.2.0"
 
-$ # Install a commit
+$ # 安装某个提交
 $ uv pip install "git+https://github.com/astral-sh/ruff@1fadefa67b26508cc59cf38e6130bde2243c929d"
 
-$ # Install a branch
+$ # 安装某个分支
 $ uv pip install "git+https://github.com/astral-sh/ruff@main"
 ```
 
-See the [Git authentication](../configuration/authentication.md#git-authentication) documentation
-for installation from a private repository.
+有关从私有仓库安装的更多信息，请参阅 [Git 认证](../configuration/authentication.md#git-authentication) 文档。
 
-## Editable packages
+## 可编辑包
 
-Editable packages do not need to be reinstalled for change to their source code to be active.
+可编辑包不需要重新安装即可使源代码的更改生效。
 
-To install the current project as an editable package
+要将当前项目安装为可编辑包：
 
 ```console
 $ uv pip install -e .
 ```
 
-To install a project in another directory as an editable package:
+要将另一个目录中的项目安装为可编辑包：
 
 ```console
 $ uv pip install -e "ruff @ ./project/ruff"
 ```
 
-## Installing packages from files
+## 从文件安装包
 
-Multiple packages can be installed at once from standard file formats.
+可以从标准文件格式一次性安装多个包。
 
-Install from a `requirements.txt` file:
+从 `requirements.txt` 文件安装：
 
 ```console
 $ uv pip install -r requirements.txt
 ```
 
-See the [`uv pip compile`](./compile.md) documentation for more information on `requirements.txt`
-files.
+有关 `requirements.txt` 文件的更多信息，请参阅 [`uv pip compile`](./compile.md) 文档。
 
-Install from a `pyproject.toml` file:
+从 `pyproject.toml` 文件安装：
 
 ```console
 $ uv pip install -r pyproject.toml
 ```
 
-Install from a `pyproject.toml` file with optional dependencies enabled, e.g., the "foo" extra:
+从 `pyproject.toml` 文件安装时启用可选依赖项，例如启用 "foo" 附加项：
 
 ```console
 $ uv pip install -r pyproject.toml --extra foo
 ```
 
-Install from a `pyproject.toml` file with all optional dependencies enabled:
+从 `pyproject.toml` 文件安装时启用所有可选依赖项：
 
 ```console
 $ uv pip install -r pyproject.toml --all-extras
 ```
 
-## Uninstalling a package
+## 卸载包
 
-To uninstall a package, e.g., Flask:
+要卸载包，例如卸载 Flask：
 
 ```console
 $ uv pip uninstall flask
 ```
 
-To uninstall multiple packages, e.g., Flask and Ruff:
+要卸载多个包，例如卸载 Flask 和 Ruff：
 
 ```console
 $ uv pip uninstall flask ruff

@@ -1,33 +1,29 @@
-# Managing dependencies
+# 管理依赖项
 
-## Dependency tables
+## 依赖项表
 
-Dependencies of the project are defined in several tables:
+项目的依赖项在几个表中定义：
 
-- [`project.dependencies`](#project-dependencies): Published dependencies.
-- [`project.optional-dependencies`](#optional-dependencies): Published optional dependencies, or
-  "extras".
-- [`dependency-groups`](#dependency-groups): Local dependencies for development.
-- [`tool.uv.sources`](#dependency-sources): Alternative sources for dependencies during development.
+- [`project.dependencies`](#project-dependencies): 已发布的依赖项。
+- [`project.optional-dependencies`](#optional-dependencies): 可选的已发布依赖项或“额外依赖项”。
+- [`dependency-groups`](#dependency-groups): 本地开发依赖项。
+- [`tool.uv.sources`](#dependency-sources): 开发期间依赖项的替代源。
 
 !!! note
 
-    The `project.dependencies` and `project.optional-dependencies` tables can be used even if
-    project isn't going to be published. `dependency-groups` are a recently standardized feature
-    and may not be supported by all tools yet.
+    即使项目不打算发布，`project.dependencies` 和 `project.optional-dependencies` 表也可以使用。`dependency-groups` 是最近标准化的特性，可能并非所有工具都已支持。
 
-uv supports modifying the project's dependencies with `uv add` and `uv remove`, but dependency
-metadata can also be updated by editing the `pyproject.toml` directly.
+`uv` 支持使用 `uv add` 和 `uv remove` 修改项目的依赖项，但也可以通过直接编辑 `pyproject.toml` 文件来更新依赖项元数据。
 
-## Adding dependencies
+## 添加依赖项
 
-To add a dependency:
+要添加一个依赖项：
 
 ```console
 $ uv add httpx
 ```
 
-An entry will be added in the `project.dependencies` table:
+此时会在 `project.dependencies` 表中添加一条记录：
 
 ```toml title="pyproject.toml" hl_lines="4"
 [project]
@@ -36,25 +32,21 @@ version = "0.1.0"
 dependencies = ["httpx>=0.27.2"]
 ```
 
-The [`--dev`](#development-dependencies), [`--group`](#dependency-groups), or
-[`--optional`](#optional-dependencies) flags can be used to add a dependencies to an alternative
-table.
+可以使用 [`--dev`](#development-dependencies)、[`--group`](#dependency-groups) 或 [`--optional`](#optional-dependencies) 标志将依赖项添加到其他表中。
 
-The dependency will include a constraint, e.g., `>=0.27.2`, for the most recent, compatible version
-of the package. An alternative constraint can be provided:
+该依赖项将包含一个约束，例如 `>=0.27.2`，表示该包的最新兼容版本。您也可以提供一个替代约束：
 
 ```console
 $ uv add 'httpx>=0.20'
 ```
 
-When adding a dependency from a source other than a package registry, uv will add an entry in the
-sources table. For example, when adding `httpx` from GitHub:
+如果依赖项来自包管理器之外的来源，`uv` 将在源表中添加一条记录。例如，添加来自 GitHub 的 `httpx`：
 
 ```console
 $ uv add "httpx @ git+https://github.com/encode/httpx"
 ```
 
-The `pyproject.toml` will include a [Git source entry](#git):
+`pyproject.toml` 将包含一个 [Git 源条目](#git)：
 
 ```toml title="pyproject.toml" hl_lines="8-9"
 [project]
@@ -68,7 +60,7 @@ dependencies = [
 httpx = { git = "https://github.com/encode/httpx" }
 ```
 
-If a dependency cannot be used, uv will display an error.:
+如果无法使用某个依赖项，`uv` 将显示错误：
 
 ```console
 $ uv add 'httpx>9999'
@@ -77,23 +69,21 @@ $ uv add 'httpx>9999'
       we can conclude that your project's requirements are unsatisfiable.
 ```
 
-## Removing dependencies
+## 删除依赖项
 
-To remove a dependency:
+要删除一个依赖项：
 
 ```console
 $ uv remove httpx
 ```
 
-The `--dev`, `--group`, or `--optional` flags can be used to remove a dependency from a specific
-table.
+可以使用 `--dev`、`--group` 或 `--optional` 标志从特定表中删除依赖项。
 
-If a [source](#dependency-sources) is defined for the removed dependency, and there are no other
-references to the dependency, it will also be removed.
+如果为已删除的依赖项定义了 [源](#dependency-sources)，并且没有其他对该依赖项的引用，它也会被删除。
 
-## Changing dependencies
+## 修改依赖项
 
-To change an existing dependency, e.g., to use a different constraint for `httpx`:
+要修改现有的依赖项，例如为 `httpx` 使用不同的约束：
 
 ```console
 $ uv add 'httpx>0.1.0'
@@ -101,37 +91,31 @@ $ uv add 'httpx>0.1.0'
 
 !!! note
 
-    In this example, we are changing the constraints for the dependency in the `pyproject.toml`.
-    The locked version of the dependency will only change if necessary to satisfy the new
-    constraints. To force the package version to update to the latest within the constraints, use `--upgrade-package <name>`, e.g.:
+    在这个示例中，我们正在修改 `pyproject.toml` 中依赖项的约束。依赖项的锁定版本只有在需要时才会更改以满足新的约束条件。要强制更新包版本到最新版本，可以使用 `--upgrade-package <name>`，例如：
 
     ```console
     $ uv add 'httpx>0.1.0' --upgrade-package httpx
     ```
 
-    See the [lockfile](./sync.md#upgrading-locked-package-versions) documentation for more details
-    on upgrading packages.
+    有关升级包的更多信息，请参阅 [锁定文件](./sync.md#upgrading-locked-package-versions) 文档。
 
-Requesting a different dependency source will update the `tool.uv.sources` table, e.g., to use
-`httpx` from a local path during development:
+请求不同的依赖项来源将更新 `tool.uv.sources` 表，例如在开发期间使用本地路径中的 `httpx`：
 
 ```console
 $ uv add "httpx @ ../httpx"
 ```
 
-## Platform-specific dependencies
+## 平台特定的依赖项
 
-To ensure that a dependency is only installed on a specific platform or on specific Python versions,
-use [environment markers](https://peps.python.org/pep-0508/#environment-markers).
+为了确保某个依赖项仅在特定平台或特定 Python 版本上安装，可以使用 [环境标记](https://peps.python.org/pep-0508/#environment-markers)。
 
-For example, to install `jax` on Linux, but not on Windows or macOS:
+例如，要在 Linux 上安装 `jax`，但不在 Windows 或 macOS 上安装：
 
 ```console
 $ uv add 'jax; sys_platform == "linux"'
 ```
 
-The resulting `pyproject.toml` will then include the environment marker in the dependency
-definition:
+生成的 `pyproject.toml` 将在依赖项定义中包含环境标记：
 
 ```toml title="pyproject.toml" hl_lines="6"
 [project]
@@ -141,58 +125,47 @@ requires-python = ">=3.11"
 dependencies = ["jax; sys_platform == 'linux'"]
 ```
 
-Similarly, to include `numpy` on Python 3.11 and later:
+类似地，要在 Python 3.11 及更高版本上包含 `numpy`：
 
 ```console
 $ uv add 'numpy; python_version >= "3.11"'
 ```
 
-See Python's [environment marker](https://peps.python.org/pep-0508/#environment-markers)
-documentation for a complete enumeration of the available markers and operators.
+请参阅 Python 的 [环境标记](https://peps.python.org/pep-0508/#environment-markers) 文档，了解可用标记和操作符的完整列表。
 
 !!! tip
 
-    Dependency sources can also be [changed per-platform](#platform-specific-sources).
+    依赖项源也可以按平台 [更改](#platform-specific-sources)。
 
-## Project dependencies
+## 项目依赖项 {: #project-dependencies}
 
-The `project.dependencies` table represents the dependencies that are used when uploading to PyPI or
-building a wheel. Individual dependencies are specified using
-[dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/)
-syntax, and the table follows the
-[PEP 621](https://packaging.python.org/en/latest/specifications/pyproject-toml/) standard.
+`project.dependencies` 表表示上传到 PyPI 或构建 wheel 时使用的依赖项。每个依赖项通过 [依赖项说明符](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) 语法来指定，表格遵循 [PEP 621](https://packaging.python.org/en/latest/specifications/pyproject-toml/) 标准。
 
-`project.dependencies` defines the list of packages that are required for the project, along with
-the version constraints that should be used when installing them. Each entry includes a dependency
-name and version. An entry may include extras or environment markers for platform-specific packages.
-For example:
+`project.dependencies` 定义了项目所需的包列表，以及在安装时应使用的版本约束。每个条目包括一个依赖项名称和版本。条目还可以包含 extras 或平台特定包的环境标记。例如：
 
 ```toml title="pyproject.toml"
 [project]
 name = "albatross"
 version = "0.1.0"
 dependencies = [
-  # Any version in this range
+  # 该范围内的任何版本
   "tqdm >=4.66.2,<5",
-  # Exactly this version of torch
+  # 精确版本的 torch
   "torch ==2.2.2",
-  # Install transformers with the torch extra
+  # 安装 transformers 并附带 torch extra
   "transformers[torch] >=4.39.3,<5",
-  # Only install this package on older python versions
-  # See "Environment Markers" for more information
+  # 仅在较旧的 Python 版本上安装此包
+  # 请参阅 "环境标记" 获取更多信息
   "importlib_metadata >=7.1.0,<8; python_version < '3.10'",
   "mollymawk ==0.1.0"
 ]
 ```
 
-## Dependency sources
+## 依赖项源 {: #dependency-sources}
 
-The `tool.uv.sources` table extends the standard dependency tables with alternative dependency
-sources, which are used during development.
+`tool.uv.sources` 表扩展了标准的依赖项表，提供了开发期间使用的替代依赖项源。
 
-Dependency sources add support common patterns that are not supported by the `project.dependencies`
-standard, like editable installations and relative paths. For example, to install `foo` from a
-directory relative to the project root:
+依赖项源增加了对 `project.dependencies` 标准不支持的常见模式的支持，如可编辑安装和相对路径。例如，要从项目根目录相对路径下的目录安装 `foo`：
 
 ```toml title="pyproject.toml" hl_lines="7"
 [project]
@@ -204,29 +177,27 @@ dependencies = ["foo"]
 foo = { path = "./packages/foo" }
 ```
 
-The following dependency sources are supported by uv:
+`uv` 支持以下依赖项源：
 
-- [Index](#index): A package resolved from a specific package index.
-- [Git](#git): A Git repository.
-- [URL](#url): A remote wheel or source distribution.
-- [Path](#path): A local wheel, source distribution, or project directory.
-- [Workspace](#workspace-member): A member of the current workspace.
+- [Index](#index): 从特定包索引解析的包。
+- [Git](#git): 一个 Git 仓库。
+- [URL](#url): 一个远程 wheel 或源分发包。
+- [Path](#path): 本地 wheel、源分发包或项目目录。
+- [Workspace](#workspace-member): 当前工作区的成员。
 
 !!! important
 
-    Sources are only respected by uv. If another tool is used, only the definitions in the standard
-    project tables will be used. If another tool is being used for development, any metadata
-    provided in the source table will need to be re-specified in the other tool's format.
+    依赖项源仅在 `uv` 中被尊重。如果使用其他工具，只会使用标准项目表中的定义。如果使用其他工具进行开发，则需要按照该工具的格式重新指定源表中的所有元数据。
 
-### Index
+### 索引 {: #index}
 
-To add Python package from a specific index, use the `--index` option:
+要从特定的索引添加 Python 包，可以使用 `--index` 选项：
 
 ```console
 $ uv add torch --index pytorch=https://download.pytorch.org/whl/cpu
 ```
 
-uv will store the index in `[[tool.uv.index]]` and add a `[tool.uv.sources]` entry:
+`uv` 将把该索引存储在 `[[tool.uv.index]]` 中，并添加一个 `[tool.uv.sources]` 条目：
 
 ```toml title="pyproject.toml"
 [project]
@@ -242,16 +213,12 @@ url = "https://download.pytorch.org/whl/cpu"
 
 !!! tip
 
-    The above example will only work on x86-64 Linux, due to the specifics of the PyTorch index.
-    See the [PyTorch guide](../../guides/integration/pytorch.md) for more information about setting
-    up PyTorch.
+    由于 PyTorch 索引的具体要求，上面的示例仅适用于 x86-64 Linux 系统。
+    请参阅 [PyTorch指南](../../guides/integration/pytorch.md)，了解如何设置 PyTorch。
 
-Using an `index` source _pins_ a package to the given index — it will not be downloaded from other
-indexes.
+使用 `index` 源会将包固定到指定的索引 —— 它不会从其他索引下载。
 
-When defining an index, an `explicit` flag can be included to indicate that the index should _only_
-be used for packages that explicitly specify it in `tool.uv.sources`. If `explicit` is not set,
-other packages may be resolved from the index, if not found elsewhere.
+在定义索引时，可以包含 `explicit` 标志，表示该索引应仅用于在 `tool.uv.sources` 中明确指定的包。如果没有设置 `explicit`，则在找不到其他源的包时，可能会从该索引解析包。
 
 ```toml title="pyproject.toml" hl_lines="3"
 [[tool.uv.index]]
@@ -260,12 +227,11 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 ```
 
-### Git
+### Git {: #git}
 
-To add a Git dependency source, prefix a Git-compatible URL (i.e., that you would use with
-`git clone`) with `git+`.
+要添加 Git 依赖项源，可以在 Git 兼容的 URL 前加上 `git+`（即使用 `git clone` 时的 URL）。
 
-For example:
+例如：
 
 ```console
 $ uv add git+https://github.com/encode/httpx
@@ -279,7 +245,7 @@ dependencies = ["httpx"]
 httpx = { git = "https://github.com/encode/httpx" }
 ```
 
-Specific Git references can be requested, e.g., a tag:
+可以请求特定的 Git 引用，例如，某个标签：
 
 ```console
 $ uv add git+https://github.com/encode/httpx --tag 0.27.0
@@ -296,7 +262,7 @@ httpx = {
 }
 ```
 
-Or, a branch:
+或者，指定一个分支：
 
 ```console
 $ uv add git+https://github.com/encode/httpx --branch main
@@ -313,7 +279,7 @@ httpx = {
 }
 ```
 
-Or, a revision (commit):
+或者，指定一个修订版（提交）：
 
 ```console
 $ uv add git+https://github.com/encode/httpx --rev 326b9431c761e1ef1e00b9f760d1f654c8db48c6
@@ -330,21 +296,19 @@ httpx = {
 }
 ```
 
-A `subdirectory` may be specified if the package isn't in the repository root.
+如果包不在仓库根目录，可以指定 `subdirectory`。
 
-### URL
+### URL {: #url}
 
-To add a URL source, provide a `https://` URL to either a wheel (ending in `.whl`) or a source
-distribution (typically ending in `.tar.gz` or `.zip`; see
-[here](../../concepts/resolution.md#source-distribution) for all supported formats).
+要添加 URL 源，提供一个指向 wheel 文件（以 `.whl` 结尾）或源代码分发文件（通常以 `.tar.gz` 或 `.zip` 结尾）的 `https://` URL（查看[此处](../../concepts/resolution.md#source-distribution)了解所有支持的格式）。
 
-For example:
+例如：
 
 ```console
 $ uv add "https://files.pythonhosted.org/packages/5c/2d/3da5bdf4408b8b2800061c339f240c1802f2e82d55e50bd39c5a881f47f0/httpx-0.27.0.tar.gz"
 ```
 
-Will result in a `pyproject.toml` with:
+这将导致 `pyproject.toml` 文件如下所示：
 
 ```toml title="pyproject.toml" hl_lines="5"
 [project]
@@ -354,24 +318,19 @@ dependencies = ["httpx"]
 httpx = { url = "https://files.pythonhosted.org/packages/5c/2d/3da5bdf4408b8b2800061c339f240c1802f2e82d55e50bd39c5a881f47f0/httpx-0.27.0.tar.gz" }
 ```
 
-URL dependencies can also be manually added or edited in the `pyproject.toml` with the
-`{ url = <url> }` syntax. A `subdirectory` may be specified if the source distribution isn't in the
-archive root.
+URL 依赖项也可以通过 `{ url = <url> }` 语法手动添加或编辑在 `pyproject.toml` 文件中。如果源代码分发文件不在归档根目录下，可以指定 `subdirectory`。
 
-### Path
+### Path {: #path}
 
-To add a path source, provide the path of a wheel (ending in `.whl`), a source distribution
-(typically ending in `.tar.gz` or `.zip`; see
-[here](../../concepts/resolution.md#source-distribution) for all supported formats), or a directory
-containing a `pyproject.toml`.
+要添加路径源，提供一个 wheel 文件（以 `.whl` 结尾）、源代码分发文件（通常以 `.tar.gz` 或 `.zip` 结尾；查看[此处](../../concepts/resolution.md#source-distribution)了解所有支持的格式）或包含 `pyproject.toml` 的目录的路径。
 
-For example:
+例如：
 
 ```console
 $ uv add /example/foo-0.1.0-py3-none-any.whl
 ```
 
-Will result in a `pyproject.toml` with:
+这将导致 `pyproject.toml` 文件如下所示：
 
 ```toml title="pyproject.toml"
 [project]
@@ -381,13 +340,13 @@ dependencies = ["foo"]
 foo = { path = "/example/foo-0.1.0-py3-none-any.whl" }
 ```
 
-The path may also be a relative path:
+路径也可以是相对路径：
 
 ```console
 $ uv add ./foo-0.1.0-py3-none-any.whl
 ```
 
-Or, a path to a project directory:
+或者，指定一个项目目录的路径：
 
 ```console
 $ uv add ~/projects/bar/
@@ -395,22 +354,17 @@ $ uv add ~/projects/bar/
 
 !!! important
 
-    An [editable installation](#editable-dependencies) is not used for path dependencies by
-    default. An editable installation may be requested for project directories:
+    默认情况下，路径依赖项不会使用[可编辑安装](#editable-dependencies)。对于项目目录，可以请求可编辑安装：
 
     ```console
     $ uv add --editable ~/projects/bar/
     ```
 
-    For multiple packages in the same repository, [_workspaces_](./workspaces.md) may be a better
-    fit.
+    对于同一仓库中的多个包，使用 [_工作空间_](./workspaces.md) 可能更合适。
 
-### Workspace member
+### 工作空间成员 {: #workspace-member}
 
-To declare a dependency on a workspace member, add the member name with `{ workspace = true }`. All
-workspace members must be explicitly stated. Workspace members are always
-[editable](#editable-dependencies) . See the [workspace](./workspaces.md) documentation for more
-details on workspaces.
+要声明对工作空间成员的依赖，使用 `{ workspace = true }` 添加成员名称。所有工作空间成员必须明确列出。工作空间成员始终是[可编辑的](#editable-dependencies)。有关工作空间的更多信息，请参见 [工作空间](./workspaces.md) 文档。
 
 ```toml title="pyproject.toml"
 [project]
@@ -425,13 +379,11 @@ members = [
 ]
 ```
 
-### Platform-specific sources
+### 平台特定源
 
-You can limit a source to a given platform or Python version by providing
-[dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/)-compatible
-environment markers for the source.
+通过为源提供[依赖说明符](https://packaging.python.org/en/latest/specifications/dependency-specifiers/)-兼容的环境标记，可以将源限制为特定平台或 Python 版本。
 
-For example, to pull `httpx` from GitHub, but only on macOS, use the following:
+例如，要仅在 macOS 上从 GitHub 拉取 `httpx`，可以使用以下配置：
 
 ```toml title="pyproject.toml" hl_lines="8"
 [project]
@@ -445,16 +397,13 @@ httpx = {
 }
 ```
 
-By specifying the marker on the source, uv will still include `httpx` on all platforms, but will
-download the source from GitHub on macOS, and fall back to PyPI on all other platforms.
+通过在源上指定标记，`uv` 将在所有平台上包含 `httpx`，但会在 macOS 上从 GitHub 下载源代码，并在其他平台上回退到 PyPI。
 
-### Multiple sources
+### 多个源
 
-You can specify multiple sources for a single dependency by providing a list of sources,
-disambiguated by [PEP 508](https://peps.python.org/pep-0508/#environment-markers)-compatible
-environment markers.
+可以通过提供一个源的列表，并使用[PEP 508](https://peps.python.org/pep-0508/#environment-markers)-兼容的环境标记来为单个依赖指定多个源。
 
-For example, to pull in different `httpx` commits on macOS vs. Linux:
+例如，要在 macOS 和 Linux 上拉取不同的 `httpx` 提交：
 
 ```toml title="pyproject.toml" hl_lines="8-9 13-14"
 [project]
@@ -475,8 +424,7 @@ httpx = [
 ]
 ```
 
-This strategy extends to using different indexes based on environment markers. For example, to
-install `torch` from different PyTorch indexes based on the platform:
+这种策略也适用于根据环境标记使用不同的索引。例如，根据平台从不同的 PyTorch 索引安装 `torch`：
 
 ```toml title="pyproject.toml" hl_lines="6-7"
 [project]
@@ -497,32 +445,23 @@ name = "torch-gpu"
 url = "https://download.pytorch.org/whl/cu124"
 ```
 
-### Disabling sources
+### 禁用源
 
-To instruct uv to ignore the `tool.uv.sources` table (e.g., to simulate resolving with the package's
-published metadata), use the `--no-sources` flag:
+要指示 `uv` 忽略 `tool.uv.sources` 表（例如，模拟使用包的发布元数据解析），请使用 `--no-sources` 标志：
 
 ```console
 $ uv lock --no-sources
 ```
 
-The use of `--no-sources` will also prevent uv from discovering any
-[workspace members](#workspace-member) that could satisfy a given dependency.
+使用 `--no-sources` 还会阻止 `uv` 发现任何可以满足给定依赖的[工作空间成员](#workspace-member)。
 
-## Optional dependencies
+## 可选依赖 {: #optional-dependencies}
 
-It is common for projects that are published as libraries to make some features optional to reduce
-the default dependency tree. For example, Pandas has an
-[`excel` extra](https://pandas.pydata.org/docs/getting_started/install.html#excel-files) and a
-[`plot` extra](https://pandas.pydata.org/docs/getting_started/install.html#visualization) to avoid
-installation of Excel parsers and `matplotlib` unless someone explicitly requires them. Extras are
-requested with the `package[<extra>]` syntax, e.g., `pandas[plot, excel]`.
+对于作为库发布的项目，通常会将某些功能设为可选，以减少默认的依赖树。例如，Pandas 有一个 [`excel` 附加功能](https://pandas.pydata.org/docs/getting_started/install.html#excel-files) 和一个 [`plot` 附加功能](https://pandas.pydata.org/docs/getting_started/install.html#visualization)，用于避免安装 Excel 解析器和 `matplotlib`，除非显式要求它们。附加功能使用 `package[<extra>]` 语法请求，例如 `pandas[plot, excel]`。
 
-Optional dependencies are specified in `[project.optional-dependencies]`, a TOML table that maps
-from extra name to its dependencies, following
-[dependency specifiers](#dependency-specifiers-pep-508) syntax.
+可选依赖在 `[project.optional-dependencies]` 中指定，这是一个 TOML 表，映射从附加功能名称到其依赖项，遵循[依赖说明符](#dependency-specifiers-pep-508)语法。
 
-Optional dependencies can have entries in `tool.uv.sources` the same as normal dependencies.
+可选依赖也可以在 `tool.uv.sources` 中有与普通依赖相同的条目。
 
 ```toml title="pyproject.toml"
 [project]
@@ -543,7 +482,7 @@ excel = [
 ]
 ```
 
-To add an optional dependency, use the `--optional <extra>` option:
+要添加一个可选依赖，请使用 `--optional <extra>` 选项：
 
 ```console
 $ uv add httpx --optional network
@@ -551,11 +490,9 @@ $ uv add httpx --optional network
 
 !!! note
 
-    If you have optional dependencies that conflict with one another, resolution will fail
-    unless you explicitly [declare them as conflicting](./config.md#conflicting-dependencies).
+    如果您的可选依赖存在冲突，除非您显式[声明它们为冲突依赖](./config.md#conflicting-dependencies)，否则解析将失败。
 
-Sources can also be declared as applying only to a specific optional dependency. For example, to
-pull `torch` from different PyTorch indexes based on an optional `cpu` or `gpu` extra:
+源也可以声明仅适用于特定的可选依赖。例如，要根据可选的 `cpu` 或 `gpu` 附加功能从不同的 PyTorch 索引拉取 `torch`：
 
 ```toml title="pyproject.toml"
 [project]
@@ -584,22 +521,19 @@ name = "torch-gpu"
 url = "https://download.pytorch.org/whl/cu124"
 ```
 
-## Development dependencies
+## 开发依赖 {: #development-dependencies}
 
-Unlike optional dependencies, development dependencies are local-only and will _not_ be included in
-the project requirements when published to PyPI or other indexes. As such, development dependencies
-are not included in the `[project]` table.
+与可选依赖不同，开发依赖仅限本地使用，并且在发布到 PyPI 或其他索引时不会被包含在项目的依赖要求中。因此，开发依赖不包含在 `[project]` 表中。
 
-Development dependencies can have entries in `tool.uv.sources` the same as normal dependencies.
+开发依赖可以像普通依赖一样在 `tool.uv.sources` 中进行定义。
 
-To add a development dependency, use the `--dev` flag:
+要添加开发依赖，使用 `--dev` 标志：
 
 ```console
 $ uv add --dev pytest
 ```
 
-uv uses the `[dependency-groups]` table (as defined in [PEP 735](https://peps.python.org/pep-0735/))
-for declaration of development dependencies. The above command will create a `dev` group:
+`uv` 使用 `[dependency-groups]` 表（如[PEP 735](https://peps.python.org/pep-0735/)所定义）来声明开发依赖。上述命令会创建一个 `dev` 组：
 
 ```toml title="pyproject.toml"
 [dependency-groups]
@@ -608,21 +542,19 @@ dev = [
 ]
 ```
 
-The `dev` group is special-cased; there are `--dev`, `--only-dev`, and `--no-dev` flags to toggle
-inclusion or exclusion of its dependencies. Additionally, the `dev` group is
-[synced by default](#default-groups).
+`dev` 组是特殊处理的；有 `--dev`、`--only-dev` 和 `--no-dev` 标志来切换其依赖的包含或排除。此外，`dev` 组是[默认同步](#default-groups)的。
 
-### Dependency groups
+### 依赖组 {: #dependency-groups}
 
-Development dependencies can be divided into multiple groups, using the `--group` flag.
+开发依赖可以分为多个组，使用 `--group` 标志。
 
-For example, to add a development dependency in the `lint` group:
+例如，要将一个开发依赖添加到 `lint` 组：
 
 ```console
 $ uv add --group lint ruff
 ```
 
-Which results in the following `[dependency-groups]` definition:
+这会在 `[dependency-groups]` 中生成以下定义：
 
 ```toml title="pyproject.toml"
 [dependency-groups]
@@ -634,29 +566,23 @@ lint = [
 ]
 ```
 
-Once groups are defined, the `--group`, `--only-group`, and `--no-group` options can be used to
-include or exclude their dependencies.
+一旦定义了组，就可以使用 `--group`、`--only-group` 和 `--no-group` 选项来包含或排除它们的依赖。
 
 !!! tip
 
-    The `--dev`, `--only-dev`, and `--no-dev` flags are equivalent to `--group dev`,
-    `--only-group dev`, and `--no-group dev` respectively.
+    `--dev`、`--only-dev` 和 `--no-dev` 标志相当于 `--group dev`、`--only-group dev` 和 `--no-group dev`。
 
-uv requires that all dependency groups are compatible with each other and resolves all groups
-together when creating the lockfile.
+`uv` 要求所有依赖组相互兼容，并在创建锁文件时将所有组一起解析。
 
-If dependencies declared in one group are not compatible with those in another group, uv will fail
-to resolve the requirements of the project with an error.
+如果一个组中声明的依赖与另一个组中的依赖不兼容，`uv` 会在解析项目的要求时失败并报错。
 
-!!! note
+!!! 注意
 
-    If you have dependency groups that conflict with one another, resolution will fail
-    unless you explicitly [declare them as conflicting](./config.md#conflicting-dependencies).
+    如果你有相互冲突的依赖组，除非你显式[声明它们为冲突依赖](./config.md#conflicting-dependencies)，否则解析将失败。
 
-### Default groups
+### 默认组 {: #default-groups}
 
-By default, uv includes the `dev` dependency group in the environment (e.g., during `uv run` or
-`uv sync`). The default groups to include can be changed using the `tool.uv.default-groups` setting.
+默认情况下，`uv` 在环境中包含 `dev` 依赖组（例如，在执行 `uv run` 或 `uv sync` 时）。可以使用 `tool.uv.default-groups` 设置来更改包含的默认组。
 
 ```toml title="pyproject.toml"
 [tool.uv]
@@ -665,12 +591,11 @@ default-groups = ["dev", "foo"]
 
 !!! tip
 
-    To exclude a default group during `uv run` or `uv sync`, use `--no-group <name>`.
+    要在 `uv run` 或 `uv sync` 中排除默认组，可以使用 `--no-group <name>`。
 
-### Legacy `dev-dependencies`
+### 旧版 `dev-dependencies`
 
-Before `[dependency-groups]` was standardized, uv used the `tool.uv.dev-dependencies` field to
-specify development dependencies, e.g.:
+在 `[dependency-groups]` 标准化之前，`uv` 使用 `tool.uv.dev-dependencies` 字段来指定开发依赖，例如：
 
 ```toml title="pyproject.toml"
 [tool.uv]
@@ -679,23 +604,17 @@ dev-dependencies = [
 ]
 ```
 
-Dependencies declared in this section will be combined with the contents in the
-`dependency-groups.dev`. Eventually, the `dev-dependencies` field will be deprecated and removed.
+在此部分声明的依赖将与 `dependency-groups.dev` 中的内容合并。最终，`dev-dependencies` 字段将被弃用并移除。
 
-!!! note
+!!! 注意
 
-    If a `tool.uv.dev-dependencies` field exists, `uv add --dev` will use the existing section
-    instead of adding a new `dependency-groups.dev` section.
+    如果存在 `tool.uv.dev-dependencies` 字段，`uv add --dev` 会使用现有的部分，而不是添加新的 `dependency-groups.dev` 部分。
 
-## Build dependencies
+## 构建依赖
 
-If a project is structured as [Python package](./config.md#build-systems), it may declare
-dependencies that are required to build the project, but not required to run it. These dependencies
-are specified in the `[build-system]` table under `build-system.requires`, following
-[PEP 518](https://peps.python.org/pep-0518/).
+如果一个项目被构建为 [Python 包](./config.md#build-systems)，它可能声明一些构建项目时所需的依赖，但不需要在运行时使用。这些依赖在 `[build-system]` 表中的 `build-system.requires` 下声明，遵循 [PEP 518](https://peps.python.org/pep-0518/)。
 
-For example, if a project uses `setuptools` as its build backend, it should declare `setuptools` as
-a build dependency:
+例如，如果项目使用 `setuptools` 作为构建后端，它应将 `setuptools` 声明为构建依赖：
 
 ```toml title="pyproject.toml"
 [project]
@@ -707,8 +626,7 @@ requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 ```
 
-By default, uv will respect `tool.uv.sources` when resolving build dependencies. For example, to use
-a local version of `setuptools` for building, add the source to `tool.uv.sources`:
+默认情况下，`uv` 在解析构建依赖时会遵循 `tool.uv.sources`。例如，要使用本地版本的 `setuptools` 进行构建，可以将该源添加到 `tool.uv.sources`：
 
 ```toml title="pyproject.toml"
 [project]
@@ -723,68 +641,47 @@ build-backend = "setuptools.build_meta"
 setuptools = { path = "./packages/setuptools" }
 ```
 
-When publishing a package, we recommend running `uv build --no-sources` to ensure that the package
-builds correctly when `tool.uv.sources` is disabled, as is the case when using other build tools,
-like [`pypa/build`](https://github.com/pypa/build).
+在发布包时，建议运行 `uv build --no-sources`，以确保在禁用 `tool.uv.sources` 的情况下正确构建包，尤其是使用其他构建工具（如 [`pypa/build`](https://github.com/pypa/build)）时。
 
-## Editable dependencies
+## 可编辑依赖 {: #editable-dependencies}
 
-A regular installation of a directory with a Python package first builds a wheel and then installs
-that wheel into your virtual environment, copying all source files. When the package source files
-are edited, the virtual environment will contain outdated versions.
+常规的 Python 包目录安装首先会构建一个 wheel 文件，然后将其安装到虚拟环境中，并复制所有源代码文件。当源代码文件被编辑时，虚拟环境中会包含过时的版本。
 
-Editable installations solve this problem by adding a link to the project within the virtual
-environment (a `.pth` file), which instructs the interpreter to include the source files directly.
+可编辑安装通过在虚拟环境中添加一个指向项目的链接（即 `.pth` 文件）来解决这个问题，这样解释器会直接包含源代码文件。
 
-There are some limitations to editables (mainly: the build backend needs to support them, and native
-modules aren't recompiled before import), but they are useful for development, as the virtual
-environment will always use the latest changes to the package.
+可编辑安装存在一些限制（主要是：构建后端需要支持它们，并且本地模块在导入前不会重新编译），但它们在开发中非常有用，因为虚拟环境总是使用包的最新更改。
 
-uv uses editable installation for workspace packages by default.
+`uv` 默认对工作区包使用可编辑安装。
 
-To add an editable dependency, use the `--editable` flag:
+要添加可编辑依赖，请使用 `--editable` 标志：
 
 ```console
 $ uv add --editable ./path/foo
 ```
 
-Or, to opt-out of using an editable dependency in a workspace:
+或者，要在工作区中选择不使用可编辑依赖：
 
 ```console
 $ uv add --no-editable ./path/foo
 ```
 
-## Dependency specifiers (PEP 508)
+## 依赖说明符（PEP 508） {: #dependency-specifiers-pep-508}
 
-uv uses
-[dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/),
-previously known as [PEP 508](https://peps.python.org/pep-0508/). A dependency specifier is composed
-of, in order:
+`uv` 使用 [依赖说明符](https://packaging.python.org/en/latest/specifications/dependency-specifiers/)，即之前所称的 [PEP 508](https://peps.python.org/pep-0508/)。一个依赖说明符由以下几部分组成，按顺序排列：
 
-- The dependency name
-- The extras you want (optional)
-- The version specifier
-- An environment marker (optional)
+- 依赖名称
+- 可选的 extras
+- 版本说明符
+- 可选的环境标记
 
-The version specifiers are comma separated and added together, e.g., `foo >=1.2.3,<2,!=1.4.0` is
-interpreted as "a version of `foo` that's at least 1.2.3, but less than 2, and not 1.4.0".
+版本说明符是逗号分隔的，并且是累加的。例如，`foo >=1.2.3,<2,!=1.4.0` 被解释为 "版本至少为 1.2.3，但小于 2，并且不为 1.4.0"。
 
-Specifiers are padded with trailing zeros if required, so `foo ==2` matches foo 2.0.0, too.
+如果需要，说明符会用尾部的零进行填充，因此 `foo ==2` 也会匹配 `foo 2.0.0`。
 
-A star can be used for the last digit with equals, e.g. `foo ==2.1.*` will accept any release from
-the 2.1 series. Similarly, `~=` matches where the last digit is equal or higher, e.g., `foo ~=1.2`
-is equal to `foo >=1.2,<2`, and `foo ~=1.2.3` is equal to `foo >=1.2.3,<1.3`.
+当使用等号时，可以使用星号作为最后一位，例如 `foo ==2.1.*` 会接受 2.1 系列中的任何版本。同样，`~=` 会匹配最后一位相等或更高的版本，例如 `foo ~=1.2` 等同于 `foo >=1.2,<2`，而 `foo ~=1.2.3` 等同于 `foo >=1.2.3,<1.3`。
 
-Extras are comma-separated in square bracket between name and version, e.g.,
-`pandas[excel,plot] ==2.2`. Whitespace between extra names is ignored.
+Extras 是逗号分隔并放在名称和版本之间的方括号中，例如，`pandas[excel,plot] ==2.2`。在 extras 名称之间的空格会被忽略。
 
-Some dependencies are only required in specific environments, e.g., a specific Python version or
-operating system. For example to install the `importlib-metadata` backport for the
-`importlib.metadata` module, use `importlib-metadata >=7.1.0,<8; python_version < '3.10'`. To
-install `colorama` on Windows (but omit it on other platforms), use
-`colorama >=0.4.6,<5; platform_system == "Windows"`.
+有些依赖只在特定环境中需要，例如某个特定的 Python 版本或操作系统。例如，要安装用于 `importlib.metadata` 模块的 `importlib-metadata` 后移植版本，可以使用 `importlib-metadata >=7.1.0,<8; python_version < '3.10'`。要在 Windows 上安装 `colorama`（但在其他平台上省略它），可以使用 `colorama >=0.4.6,<5; platform_system == "Windows"`。
 
-Markers are combined with `and`, `or`, and parentheses, e.g.,
-`aiohttp >=3.7.4,<4; (sys_platform != 'win32' or implementation_name != 'pypy') and python_version >= '3.10'`.
-Note that versions within markers must be quoted, while versions _outside_ of markers must _not_ be
-quoted.
+标记可以使用 `and`、`or` 和括号进行组合，例如，`aiohttp >=3.7.4,<4; (sys_platform != 'win32' or implementation_name != 'pypy') and python_version >= '3.10'`。请注意，标记中的版本必须用引号括起来，而标记外的版本则不需要引号。

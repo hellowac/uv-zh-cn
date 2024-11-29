@@ -1,11 +1,11 @@
-# Concepts overview
+# 概念概览
 
-Read the concept documents to learn more about uv's features:
+阅读概念文档以了解更多关于 uv 的功能：
 
-- [Projects](./projects/index.md)
-- [Tools](./tools.md)
-- [Python versions](./python-versions.md)
-- [Resolution](./resolution.md)
-- [Caching](./cache.md)
+- [项目](./projects/index.md)
+- [工具](./tools.md)
+- [Python 版本](./python-versions.md)
+- [解析](./resolution.md)
+- [缓存](./cache.md)
 
-Looking for a quick introduction to features? See the [guides](../guides/index.md) instead.
+想要快速了解功能介绍？请查看 [指南](../guides/index.md)。

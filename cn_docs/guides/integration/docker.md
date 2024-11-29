@@ -1,57 +1,54 @@
-# Using uv in Docker
+# 在 Docker 中使用 uv
 
-## Getting started
+## 开始使用
 
 !!! tip
 
-    Check out the [`uv-docker-example`](https://github.com/astral-sh/uv-docker-example) project for
-    an example of best practices when using uv to build an application in Docker.
+    查看 [`uv-docker-example`](https://github.com/astral-sh/uv-docker-example) 项目，了解使用 uv 在 Docker 中构建应用的最佳实践示例。
 
-### Running uv in a container
+### 在容器中运行 uv
 
-A Docker image is published with a built version of uv available. To run a uv command in a
-container:
+Docker 镜像已发布，包含 uv 的构建版本。要在容器中运行 uv 命令：
 
 ```console
 $ docker run ghcr.io/astral-sh/uv --help
 ```
 
-### Available images
+### 可用的镜像
 
-uv provides a distroless Docker image including the `uv` binary. The following tags are published:
+uv 提供了一个无发行版的 Docker 镜像，包含 uv 二进制文件。发布了以下标签：
 
 - `ghcr.io/astral-sh/uv:latest`
-- `ghcr.io/astral-sh/uv:{major}.{minor}.{patch}`, e.g., `ghcr.io/astral-sh/uv:0.5.5`
-- `ghcr.io/astral-sh/uv:{major}.{minor}`, e.g., `ghcr.io/astral-sh/uv:0.5` (the latest patch
-  version)
+- `ghcr.io/astral-sh/uv:{major}.{minor}.{patch}`，例如 `ghcr.io/astral-sh/uv:0.5.5`
+- `ghcr.io/astral-sh/uv:{major}.{minor}`，例如 `ghcr.io/astral-sh/uv:0.5`（最新的修补版本）
 
-In addition, uv publishes the following images:
+此外，uv 还发布了以下镜像：
 
 <!-- prettier-ignore -->
-- Based on `alpine:3.20`:
+- 基于 `alpine:3.20`：
     - `ghcr.io/astral-sh/uv:alpine`
     - `ghcr.io/astral-sh/uv:alpine3.20`
-- Based on `debian:bookworm-slim`:
+- 基于 `debian:bookworm-slim`：
     - `ghcr.io/astral-sh/uv:debian-slim`
     - `ghcr.io/astral-sh/uv:bookworm-slim`
-- Based on `buildpack-deps:bookworm`:
+- 基于 `buildpack-deps:bookworm`：
     - `ghcr.io/astral-sh/uv:debian`
     - `ghcr.io/astral-sh/uv:bookworm`
-- Based on `python3.x-alpine`:
+- 基于 `python3.x-alpine`：
     - `ghcr.io/astral-sh/uv:python3.13-alpine`
     - `ghcr.io/astral-sh/uv:python3.12-alpine`
     - `ghcr.io/astral-sh/uv:python3.11-alpine`
     - `ghcr.io/astral-sh/uv:python3.10-alpine`
     - `ghcr.io/astral-sh/uv:python3.9-alpine`
     - `ghcr.io/astral-sh/uv:python3.8-alpine`
-- Based on `python3.x-bookworm`:
+- 基于 `python3.x-bookworm`：
     - `ghcr.io/astral-sh/uv:python3.13-bookworm`
     - `ghcr.io/astral-sh/uv:python3.12-bookworm`
     - `ghcr.io/astral-sh/uv:python3.11-bookworm`
     - `ghcr.io/astral-sh/uv:python3.10-bookworm`
     - `ghcr.io/astral-sh/uv:python3.9-bookworm`
     - `ghcr.io/astral-sh/uv:python3.8-bookworm`
-- Based on `python3.x-slim-bookworm`:
+- 基于 `python3.x-slim-bookworm`：
     - `ghcr.io/astral-sh/uv:python3.13-bookworm-slim`
     - `ghcr.io/astral-sh/uv:python3.12-bookworm-slim`
     - `ghcr.io/astral-sh/uv:python3.11-bookworm-slim`
@@ -60,99 +57,90 @@ In addition, uv publishes the following images:
     - `ghcr.io/astral-sh/uv:python3.8-bookworm-slim`
 <!-- prettier-ignore-end -->
 
-As with the distroless image, each image is published with uv version tags as
-`ghcr.io/astral-sh/uv:{major}.{minor}.{patch}-{base}` and
-`ghcr.io/astral-sh/uv:{major}.{minor}-{base}`, e.g., `ghcr.io/astral-sh/uv:0.5.5-alpine`.
+与无发行版镜像一样，每个镜像都发布了 uv 版本标签，如 `ghcr.io/astral-sh/uv:{major}.{minor}.{patch}-{base}` 和 `ghcr.io/astral-sh/uv:{major}.{minor}-{base}`，例如 `ghcr.io/astral-sh/uv:0.5.5-alpine`。
 
-For more details, see the [GitHub Container](https://github.com/astral-sh/uv/pkgs/container/uv)
-page.
+有关更多详细信息，请参见 [GitHub 容器](https://github.com/astral-sh/uv/pkgs/container/uv) 页面。
 
-### Installing uv
+### 安装 uv
 
-Use one of the above images with uv pre-installed or install uv by copying the binary from the
-official distroless Docker image:
+使用预先安装了 uv 的上述镜像，或者通过复制官方无发行版 Docker 镜像中的二进制文件来安装 uv：
 
 ```dockerfile title="Dockerfile"
 FROM python:3.12-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 ```
 
-Or, with the installer:
+或者，使用安装程序：
 
 ```dockerfile title="Dockerfile"
 FROM python:3.12-slim-bookworm
 
-# The installer requires curl (and certificates) to download the release archive
+# 安装程序需要 curl（和证书）来下载发行包
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
 
-# Download the latest installer
+# 下载最新安装程序
 ADD https://astral.sh/uv/install.sh /uv-installer.sh
 
-# Run the installer then remove it
+# 运行安装程序并删除它
 RUN sh /uv-installer.sh && rm /uv-installer.sh
 
-# Ensure the installed binary is on the `PATH`
+# 确保安装的二进制文件在 `PATH` 中
 ENV PATH="/root/.local/bin/:$PATH"
 ```
 
-Note this requires `curl` to be available.
+请注意，这要求 `curl` 可用。
 
-In either case, it is best practice to pin to a specific uv version, e.g., with:
+在这两种情况下，最好的做法是固定 uv 的特定版本，例如：
 
 ```dockerfile
 COPY --from=ghcr.io/astral-sh/uv:0.5.5 /uv /uvx /bin/
 ```
 
-Or, with the installer:
+或者，使用安装程序：
 
 ```dockerfile
 ADD https://astral.sh/uv/0.5.5/install.sh /uv-installer.sh
 ```
 
-### Installing a project
+### 安装项目
 
-If you're using uv to manage your project, you can copy it into the image and install it:
+如果您使用 uv 来管理您的项目，您可以将项目复制到镜像中并进行安装：
 
 ```dockerfile title="Dockerfile"
-# Copy the project into the image
+# 将项目复制到镜像中
 ADD . /app
 
-# Sync the project into a new environment, using the frozen lockfile
+# 将项目同步到新环境中，使用冻结的 lockfile
 WORKDIR /app
 RUN uv sync --frozen
 ```
 
 !!! important
 
-    It is best practice to add `.venv` to a [`.dockerignore` file](https://docs.docker.com/build/concepts/context/#dockerignore-files)
-    in your repository to prevent it from being included in image builds. The project virtual
-    environment is dependent on your local platform and should be created from scratch in the image.
+    最佳实践是将 `.venv` 添加到 [`.dockerignore` 文件](https://docs.docker.com/build/concepts/context/#dockerignore-files) 中，避免其被包含在镜像构建中。项目的虚拟环境依赖于本地平台，应在镜像中从头创建。
 
-Then, to start your application by default:
+然后，默认启动应用程序：
 
 ```dockerfile title="Dockerfile"
-# Presuming there is a `my_app` command provided by the project
+# 假设项目提供了一个 `my_app` 命令
 CMD ["uv", "run", "my_app"]
 ```
 
 !!! tip
 
-    It is best practice to use [intermediate layers](#intermediate-layers) separating installation
-    of dependencies and the project itself to improve Docker image build times.
+    最佳实践是使用 [中间层](#intermediate-layers)，将依赖项的安装与项目本身的安装分开，以提高 Docker 镜像构建时间。
 
-See a complete example in the
-[`uv-docker-example` project](https://github.com/astral-sh/uv-docker-example/blob/main/Dockerfile).
+您可以在 [`uv-docker-example` 项目](https://github.com/astral-sh/uv-docker-example/blob/main/Dockerfile) 中查看完整示例。
 
-### Using the environment
+### 使用环境
 
-Once the project is installed, you can either _activate_ the project virtual environment by placing
-its binary directory at the front of the path:
+安装完项目后，您可以通过将项目虚拟环境的二进制目录放到路径的最前面来 _激活_ 项目虚拟环境：
 
 ```dockerfile title="Dockerfile"
 ENV PATH="/app/.venv/bin:$PATH"
 ```
 
-Or, you can use `uv run` for any commands that require the environment:
+或者，您也可以使用 `uv run` 来执行需要该环境的任何命令：
 
 ```dockerfile title="Dockerfile"
 RUN uv run some_script.py
@@ -160,15 +148,11 @@ RUN uv run some_script.py
 
 !!! tip
 
-    Alternatively, the
-    [`UV_PROJECT_ENVIRONMENT` setting](../../concepts/projects/config.md#project-environment-path) can
-    be set before syncing to install to the system Python environment and skip environment activation
-    entirely.
+    或者，可以在同步之前设置 [`UV_PROJECT_ENVIRONMENT`](../../concepts/projects/config.md#project-environment-path) 设置，将项目安装到系统 Python 环境中，从而完全跳过虚拟环境的激活。
 
-### Using installed tools
+### 使用已安装的工具
 
-To use installed tools, ensure the [tool bin directory](../../concepts/tools.md#the-bin-directory)
-is on the path:
+要使用已安装的工具，确保 [工具的 bin 目录](../../concepts/tools.md#the-bin-directory) 在路径中：
 
 ```dockerfile title="Dockerfile"
 ENV PATH=/root/.local/bin:$PATH
@@ -191,38 +175,29 @@ $ docker run -it $(docker build -q .) /bin/bash -c "cowsay -t hello"
 
 !!! note
 
-    The tool bin directory's location can be determined by running the `uv tool dir --bin` command
-    in the container.
+    工具 bin 目录的位置可以通过在容器中运行 `uv tool dir --bin` 命令来确定。
 
-    Alternatively, it can be set to a constant location:
+    或者，它可以设置为固定位置：
 
     ```dockerfile title="Dockerfile"
     ENV UV_TOOL_BIN_DIR=/opt/uv-bin/
     ```
 
-### Installing Python in musl-based images
+### 在 musl 基础镜像中安装 Python
 
-While uv [installs a compatible Python version](../install-python.md) if there isn't one available
-in the image, uv does not yet support installing Python for musl-based distributions. For example,
-if you are using an Alpine Linux base image that doesn't have Python installed, you need to add it
-with the system package manager:
+虽然 uv [会安装兼容的 Python 版本](../install-python.md)（如果镜像中没有可用的版本），但 uv 目前不支持为 musl 基础的发行版安装 Python。例如，如果您使用的是没有安装 Python 的 Alpine Linux 基础镜像，您需要通过系统包管理器添加 Python：
 
 ```shell
 apk add --no-cache python3~=3.12
 ```
 
-## Developing in a container
+## 在容器中开发
 
-When developing, it's useful to mount the project directory into a container. With this setup,
-changes to the project can be immediately reflected in a containerized service without rebuilding
-the image. However, it is important _not_ to include the project virtual environment (`.venv`) in
-the mount, because the virtual environment is platform specific and the one built for the image
-should be kept.
+在开发过程中，将项目目录挂载到容器中非常有用。通过这种设置，项目的更改可以立即反映到容器化的服务中，而无需重新构建镜像。然而，重要的是 _不要_ 将项目的虚拟环境（`.venv`）包括在挂载中，因为虚拟环境是平台特定的，应该保留为镜像中构建的虚拟环境。
 
-### Mounting the project with `docker run`
+### 使用 `docker run` 挂载项目
 
-Bind mount the project (in the working directory) to `/app` while retaining the `.venv` directory
-with an [anonymous volume](https://docs.docker.com/engine/storage/#volumes):
+将项目（在工作目录中）绑定挂载到 `/app`，同时保留 `.venv` 目录，并使用 [匿名卷](https://docs.docker.com/engine/storage/#volumes)：
 
 ```console
 $ docker run --rm --volume .:/app --volume /app/.venv [...]
@@ -230,27 +205,19 @@ $ docker run --rm --volume .:/app --volume /app/.venv [...]
 
 !!! tip
 
-    The `--rm` flag is included to ensure the container and anonymous volume are cleaned up when the
-    container exits.
+    包含 `--rm` 标志，确保容器退出时清理容器和匿名卷。
 
-See a complete example in the
-[`uv-docker-example` project](https://github.com/astral-sh/uv-docker-example/blob/main/run.sh).
+您可以在 [`uv-docker-example` 项目](https://github.com/astral-sh/uv-docker-example/blob/main/run.sh) 中查看完整示例。
 
-### Configuring `watch` with `docker compose`
+### 使用 `docker compose` 配置 `watch`
 
-When using Docker compose, more sophisticated tooling is available for container development. The
-[`watch`](https://docs.docker.com/compose/file-watch/#compose-watch-versus-bind-mounts) option
-allows for greater granularity than is practical with a bind mount and supports triggering updates
-to the containerized service when files change.
+在使用 Docker Compose 时，可以使用更复杂的工具进行容器开发。[`watch`](https://docs.docker.com/compose/file-watch/#compose-watch-versus-bind-mounts) 选项比绑定挂载提供了更细粒度的控制，并支持在文件发生更改时触发容器化服务的更新。
 
-!!! note
+!!! 注意
 
-    This feature requires Compose 2.22.0 which is bundled with Docker Desktop 4.24.
+    此功能需要 Docker Compose 2.22.0 版本，该版本随 Docker Desktop 4.24 一起提供。
 
-Configure `watch` in your
-[Docker compose file](https://docs.docker.com/compose/compose-application-model/#the-compose-file)
-to mount the project directory without syncing the project virtual environment and to rebuild the
-image when the configuration changes:
+在您的 [Docker Compose 文件](https://docs.docker.com/compose/compose-application-model/#the-compose-file) 中配置 `watch`，以挂载项目目录但不同步项目虚拟环境，并在配置更改时重建镜像：
 
 ```yaml title="compose.yaml"
 services:
@@ -260,51 +227,47 @@ services:
     # ...
 
     develop:
-      # Create a `watch` configuration to update the app
+      # 创建一个 `watch` 配置来更新应用程序
       #
       watch:
-        # Sync the working directory with the `/app` directory in the container
+        # 将工作目录与容器中的 `/app` 目录同步
         - action: sync
           path: .
           target: /app
-          # Exclude the project virtual environment
+          # 排除项目虚拟环境
           ignore:
             - .venv/
 
-        # Rebuild the image on changes to the `pyproject.toml`
+        # 在 `pyproject.toml` 更改时重建镜像
         - action: rebuild
           path: ./pyproject.toml
 ```
 
-Then, run `docker compose watch` to run the container with the development setup.
+然后，运行 `docker compose watch` 以开发设置启动容器。
 
-See a complete example in the
-[`uv-docker-example` project](https://github.com/astral-sh/uv-docker-example/blob/main/compose.yml).
+您可以在 [`uv-docker-example` 项目](https://github.com/astral-sh/uv-docker-example/blob/main/compose.yml) 中查看完整示例。
 
-## Optimizations
+## 优化
 
-### Compiling bytecode
+### 编译字节码
 
-Compiling Python source files to bytecode is typically desirable for production images as it tends
-to improve startup time (at the cost of increased installation time).
+将 Python 源文件编译为字节码通常是生产镜像的一个理想选择，因为它可以改善启动时间（尽管会增加安装时间）。
 
-To enable bytecode compilation, use the `--compile-bytecode` flag:
+要启用字节码编译，请使用 `--compile-bytecode` 标志：
 
 ```dockerfile title="Dockerfile"
 RUN uv sync --compile-bytecode
 ```
 
-Alternatively, you can set the `UV_COMPILE_BYTECODE` environment variable to ensure that all
-commands within the Dockerfile compile bytecode:
+或者，您可以设置 `UV_COMPILE_BYTECODE` 环境变量，以确保 Dockerfile 中的所有命令都编译字节码：
 
 ```dockerfile title="Dockerfile"
 ENV UV_COMPILE_BYTECODE=1
 ```
 
-### Caching
+### 缓存
 
-A [cache mount](https://docs.docker.com/build/guide/mounts/#add-a-cache-mount) can be used to
-improve performance across builds:
+可以使用 [缓存挂载](https://docs.docker.com/build/guide/mounts/#add-a-cache-mount) 来提高构建性能：
 
 ```dockerfile title="Dockerfile"
 ENV UV_LINK_MODE=copy
@@ -313,164 +276,149 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 ```
 
-Changing the default [`UV_LINK_MODE`](../../reference/settings.md#link-mode) silences warnings about
-not being able to use hard links since the cache and sync target are on separate file systems.
+改变默认的 [`UV_LINK_MODE`](../../reference/settings.md#link-mode) 设置可以消除有关无法使用硬链接的警告，因为缓存和同步目标位于不同的文件系统上。
 
-If you're not mounting the cache, image size can be reduced by using the `--no-cache` flag or
-setting `UV_NO_CACHE`.
+如果不挂载缓存，可以通过使用 `--no-cache` 标志或设置 `UV_NO_CACHE` 来减少镜像的大小。
 
 !!! note
 
-    The cache directory's location can be determined by running the `uv cache dir` command in the
-    container.
+    缓存目录的位置可以通过在容器中运行 `uv cache dir` 命令来确定。
 
-    Alternatively, the cache can be set to a constant location:
+    或者，可以将缓存设置为固定位置：
 
     ```dockerfile title="Dockerfile"
     ENV UV_CACHE_DIR=/opt/uv-cache/
     ```
 
-### Intermediate layers
+### 中间层
 
-If you're using uv to manage your project, you can improve build times by moving your transitive
-dependency installation into its own layer via the `--no-install` options.
+如果使用 uv 管理项目，可以通过将传递依赖项安装移到独立的层来提高构建速度，方法是使用 `--no-install` 选项。
 
-`uv sync --no-install-project` will install the dependencies of the project but not the project
-itself. Since the project changes frequently, but its dependencies are generally static, this can be
-a big time saver.
+`uv sync --no-install-project` 将安装项目的依赖项，但不会安装项目本身。由于项目内容变化频繁，而依赖项通常是静态的，这可以节省大量时间。
 
 ```dockerfile title="Dockerfile"
-# Install uv
+# 安装 uv
 FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Change the working directory to the `app` directory
+# 将工作目录更改为 `app` 目录
 WORKDIR /app
 
-# Install dependencies
+# 安装依赖项
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project
 
-# Copy the project into the image
+# 将项目复制到镜像中
 ADD . /app
 
-# Sync the project
+# 同步项目
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 ```
 
-Note that the `pyproject.toml` is required to identify the project root and name, but the project
-_contents_ are not copied into the image until the final `uv sync` command.
+注意，`pyproject.toml` 是识别项目根目录和名称所必需的，但项目的 _内容_ 直到最后一个 `uv sync` 命令执行时才会被复制到镜像中。
 
 !!! tip
 
-    If you're using a [workspace](../../concepts/projects/workspaces.md), then use the
-    `--no-install-workspace` flag which excludes the project _and_ any workspace members.
+    如果使用 [工作空间](../../concepts/projects/workspaces.md)，可以使用 `--no-install-workspace` 标志，排除项目 _和_ 任何工作空间成员。
 
-    If you want to remove specific packages from the sync, use `--no-install-package <name>`.
+    如果要从同步中移除特定的包，可以使用 `--no-install-package <name>`。
 
-### Non-editable installs
+### 非可编辑安装
 
-By default, uv installs projects and workspace members in editable mode, such that changes to the
-source code are immediately reflected in the environment.
+默认情况下，uv 会以可编辑模式安装项目和工作空间成员，这样对源代码的更改会立即反映到环境中。
 
-`uv sync` and `uv run` both accept a `--no-editable` flag, which instructs uv to install the project
-in non-editable mode, removing any dependency on the source code.
+`uv sync` 和 `uv run` 都接受 `--no-editable` 标志，该标志指示 uv 以非可编辑模式安装项目，从而去除对源代码的依赖。
 
-In the context of a multi-stage Docker image, `--no-editable` can be used to include the project in
-the synced virtual environment from one stage, then copy the virtual environment alone (and not the
-source code) into the final image.
+在多阶段 Docker 镜像的上下文中，可以使用 `--no-editable` 来包括来自某一阶段的项目到同步的虚拟环境中，然后将虚拟环境（而不是源代码）单独复制到最终镜像中。
 
-For example:
+例如：
 
 ```dockerfile title="Dockerfile"
-# Install uv
+# 安装 uv
 FROM python:3.12-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Change the working directory to the `app` directory
+# 将工作目录更改为 `app` 目录
 WORKDIR /app
 
-# Install dependencies
+# 安装依赖项
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --no-editable
 
-# Copy the project into the intermediate image
+# 将项目复制到中间镜像
 ADD . /app
 
-# Sync the project
+# 同步项目
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-editable
 
 FROM python:3.12-slim
 
-# Copy the environment, but not the source code
+# 复制虚拟环境，但不复制源代码
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 
-# Run the application
+# 运行应用程序
 CMD ["/app/.venv/bin/hello"]
 ```
 
-### Using uv temporarily
+### 临时使用 uv
 
-If uv isn't needed in the final image, the binary can be mounted in each invocation:
+如果 uv 不需要在最终镜像中使用，可以在每次调用时挂载二进制文件：
 
 ```dockerfile title="Dockerfile"
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     uv sync
 ```
 
-## Using the pip interface
+## 使用 pip 接口
 
-### Installing a package
+### 安装包
 
-The system Python environment is safe to use this context, since a container is already isolated.
-The `--system` flag can be used to install in the system environment:
+在这个上下文中，系统 Python 环境是安全的，因为容器本身已经被隔离。可以使用 `--system` 标志来在系统环境中安装包：
 
 ```dockerfile title="Dockerfile"
 RUN uv pip install --system ruff
 ```
 
-To use the system Python environment by default, set the `UV_SYSTEM_PYTHON` variable:
+要默认使用系统 Python 环境，可以设置 `UV_SYSTEM_PYTHON` 环境变量：
 
 ```dockerfile title="Dockerfile"
 ENV UV_SYSTEM_PYTHON=1
 ```
 
-Alternatively, a virtual environment can be created and activated:
+另外，也可以创建并激活一个虚拟环境：
 
 ```dockerfile title="Dockerfile"
 RUN uv venv /opt/venv
-# Use the virtual environment automatically
+# 自动使用虚拟环境
 ENV VIRTUAL_ENV=/opt/venv
-# Place entry points in the environment at the front of the path
+# 将环境中的入口点添加到路径的前面
 ENV PATH="/opt/venv/bin:$PATH"
 ```
 
-When using a virtual environment, the `--system` flag should be omitted from uv invocations:
+使用虚拟环境时，uv 调用中应省略 `--system` 标志：
 
 ```dockerfile title="Dockerfile"
 RUN uv pip install ruff
 ```
 
-### Installing requirements
+### 安装依赖
 
-To install requirements files, copy them into the container:
+要安装 requirements 文件，将其复制到容器中：
 
 ```dockerfile title="Dockerfile"
 COPY requirements.txt .
 RUN uv pip install -r requirements.txt
 ```
 
-### Installing a project
+### 安装项目
 
-When installing a project alongside requirements, it is best practice to separate copying the
-requirements from the rest of the source code. This allows the dependencies of the project (which do
-not change often) to be cached separately from the project itself (which changes very frequently).
+在安装项目和依赖项时，最佳实践是将复制依赖项的操作与复制其他源代码分开。这可以让项目的依赖项（通常变化不大）与项目本身（变化频繁）分别缓存。
 
 ```dockerfile title="Dockerfile"
 COPY pyproject.toml .

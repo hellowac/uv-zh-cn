@@ -1,19 +1,14 @@
-# Running scripts
+# 运行脚本
 
-A Python script is a file intended for standalone execution, e.g., with `python <script>.py`. Using
-uv to execute scripts ensures that script dependencies are managed without manually managing
-environments.
+Python 脚本是一个用于独立执行的文件，例如使用 `python <script>.py`。使用 uv 来执行脚本可以确保脚本的依赖项得到管理，而无需手动管理环境。
 
 !!! note
 
-    If you are not familiar with Python environments: every Python installation has an environment
-    that packages can be installed in. Typically, creating [_virtual_ environments](https://docs.python.org/3/library/venv.html) is recommended to
-    isolate packages required by each script. uv automatically manages virtual environments for you
-    and prefers a [declarative](#declaring-script-dependencies) approach to dependencies.
+    如果你不熟悉 Python 环境：每个 Python 安装都有一个可以安装包的环境。通常，建议创建 [_虚拟环境_](https://docs.python.org/3/library/venv.html) 来隔离每个脚本所需的包。uv 会自动为你管理虚拟环境，并倾向于使用 [声明式](#declaring-script-dependencies) 方式来处理依赖。
 
-## Running a script without dependencies
+## 运行没有依赖的脚本
 
-If your script has no dependencies, you can execute it with `uv run`:
+如果你的脚本没有依赖项，可以使用 `uv run` 执行它：
 
 ```python title="example.py"
 print("Hello world")
@@ -24,9 +19,9 @@ $ uv run example.py
 Hello world
 ```
 
-<!-- TODO(zanieb): Once we have a `python` shim, note you can execute it with `python` here -->
+<!-- TODO(zanieb): 一旦我们有了 `python` shim，注意你也可以在这里使用 `python` 执行 -->
 
-Similarly, if your script depends on a module in the standard library, there's nothing more to do:
+同样，如果你的脚本依赖于标准库中的模块，也不需要做额外的操作：
 
 ```python title="example.py"
 import os
@@ -39,7 +34,7 @@ $ uv run example.py
 /Users/astral
 ```
 
-Arguments may be provided to the script:
+你可以向脚本传递参数：
 
 ```python title="example.py"
 import sys
@@ -55,13 +50,13 @@ $ uv run example.py hello world!
 hello world!
 ```
 
-Additionally, your script can be read directly from stdin:
+此外，你还可以直接从 stdin 读取脚本：
 
 ```console
 $ echo 'print("hello world!")' | uv run -
 ```
 
-Or, if your shell supports [here-documents](https://en.wikipedia.org/wiki/Here_document):
+或者，如果你的 shell 支持 [here-documents](https://en.wikipedia.org/wiki/Here_document)：
 
 ```bash
 uv run - <<EOF
@@ -69,27 +64,20 @@ print("hello world!")
 EOF
 ```
 
-Note that if you use `uv run` in a _project_, i.e. a directory with a `pyproject.toml`, it will
-install the current project before running the script. If your script does not depend on the
-project, use the `--no-project` flag to skip this:
+请注意，如果在 _项目_ 中使用 `uv run`，即在包含 `pyproject.toml` 的目录中，它将在运行脚本之前安装当前项目。如果你的脚本不依赖于该项目，可以使用 `--no-project` 标志跳过此步骤：
 
 ```console
-$ # Note, it is important that the flag comes _before_ the script
+$ # 注意，标志必须在脚本之前
 $ uv run --no-project example.py
 ```
 
-See the [projects guide](./projects.md) for more details on working in projects.
+有关在项目中工作的更多细节，请参阅 [项目指南](./projects.md)。
 
-## Running a script with dependencies
+## 运行有依赖的脚本
 
-When your script requires other packages, they must be installed into the environment that the
-script runs in. uv prefers to create these environments on-demand instead of using a long-lived
-virtual environment with manually managed dependencies. This requires explicit declaration of
-dependencies that are required for the script. Generally, it's recommended to use a
-[project](./projects.md) or [inline metadata](#declaring-script-dependencies) to declare
-dependencies, but uv supports requesting dependencies per invocation as well.
+当你的脚本需要其他包时，这些包必须安装到脚本运行的环境中。uv 更倾向于按需创建这些环境，而不是使用一个长时间存在的虚拟环境来手动管理依赖项。这要求显式声明脚本所需的依赖项。通常，建议使用 [项目](./projects.md) 或 [内联元数据](#declaring-script-dependencies) 来声明依赖项，但 uv 也支持每次调用时请求依赖项。
 
-For example, the following script requires `rich`.
+例如，以下脚本需要 `rich` 库：
 
 ```python title="example.py"
 import time
@@ -99,7 +87,7 @@ for i in track(range(20), description="For example:"):
     time.sleep(0.05)
 ```
 
-If executed without specifying a dependency, this script will fail:
+如果没有指定依赖项，执行该脚本将失败：
 
 ```console
 $ uv run --no-project example.py
@@ -109,47 +97,42 @@ Traceback (most recent call last):
 ModuleNotFoundError: No module named 'rich'
 ```
 
-Request the dependency using the `--with` option:
+可以使用 `--with` 选项请求依赖项：
 
 ```console
 $ uv run --with rich example.py
 For example: ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:01
 ```
 
-Constraints can be added to the requested dependency if specific versions are needed:
+如果需要特定版本，可以对请求的依赖项添加版本限制：
 
 ```console
 $ uv run --with 'rich>12,<13' example.py
 ```
 
-Multiple dependencies can be requested by repeating with `--with` option.
+可以通过重复使用 `--with` 选项来请求多个依赖项。
 
-Note that if `uv run` is used in a _project_, these dependencies will be included _in addition_ to
-the project's dependencies. To opt-out of this behavior, use the `--no-project` flag.
+请注意，如果在 _项目_ 中使用 `uv run`，这些依赖项将被包含在项目的依赖项之外。要排除此行为，请使用 `--no-project` 标志。
 
-## Creating a Python script
+## 创建 Python 脚本
 
-Python recently added a standard format for
-[inline script metadata](https://packaging.python.org/en/latest/specifications/inline-script-metadata/#inline-script-metadata).
-It allows for selecting Python versions and defining dependencies. Use `uv init --script` to
-initialize scripts with the inline metadata:
+Python 最近为 [内联脚本元数据](https://packaging.python.org/en/latest/specifications/inline-script-metadata/#inline-script-metadata) 添加了标准格式。它允许选择 Python 版本并定义依赖项。使用 `uv init --script` 来初始化带有内联元数据的脚本：
 
 ```console
 $ uv init --script example.py --python 3.12
 ```
 
-## Declaring script dependencies
+## 声明脚本依赖 {: #declaring-script-dependencies}
 
-The inline metadata format allows the dependencies for a script to be declared in the script itself.
+内联元数据格式允许在脚本本身中声明依赖项。
 
-uv supports adding and updating inline script metadata for you. Use `uv add --script` to declare the
-dependencies for the script:
+uv 支持为你添加和更新内联脚本元数据。使用 `uv add --script` 来声明脚本的依赖项：
 
 ```console
 $ uv add --script example.py 'requests<3' 'rich'
 ```
 
-This will add a `script` section at the top of the script declaring the dependencies using TOML:
+这将会在脚本顶部添加一个 `script` 部分，使用 TOML 声明依赖项：
 
 ```python title="example.py"
 # /// script
@@ -167,7 +150,7 @@ data = resp.json()
 pprint([(k, v["title"]) for k, v in data.items()][:10])
 ```
 
-uv will automatically create an environment with the dependencies necessary to run the script, e.g.:
+uv 会自动创建一个环境，并安装运行脚本所需的依赖项，例如：
 
 ```console
 $ uv run example.py
@@ -187,9 +170,9 @@ $ uv run example.py
 
 !!! important
 
-    When using inline script metadata, even if `uv run` is [used in a _project_](../concepts/projects/run.md), the project's dependencies will be ignored. The `--no-project` flag is not required.
+    当使用内联脚本元数据时，即使 `uv run` [在 _项目_ 中使用](../concepts/projects/run.md)，项目的依赖项也会被忽略。此时不需要使用 `--no-project` 标志。
 
-uv also respects Python version requirements:
+uv 还会遵守 Python 版本要求：
 
 ```python title="example.py"
 # /// script
@@ -197,27 +180,22 @@ uv also respects Python version requirements:
 # dependencies = []
 # ///
 
-# Use some syntax added in Python 3.12
+# 使用 Python 3.12 添加的某些语法
 type Point = tuple[float, float]
 print(Point)
 ```
 
 !!! note
 
-    The `dependencies` field must be provided even if empty.
+    即使 `dependencies` 字段为空，也必须提供该字段。
 
-`uv run` will search for and use the required Python version. The Python version will download if it
-is not installed — see the documentation on [Python versions](../concepts/python-versions.md) for
-more details.
+`uv run` 将搜索并使用所需的 Python 版本。如果该版本未安装，Python 会被下载——有关更多详细信息，请参阅 [Python 版本](../concepts/python-versions.md) 文档。
 
-## Improving reproducibility
+## 提高可重复性
 
-uv supports an `exclude-newer` field in the `tool.uv` section of inline script metadata to limit uv
-to only considering distributions released before a specific date. This is useful for improving the
-reproducibility of your script when run at a later point in time.
+uv 支持在内联脚本元数据的 `tool.uv` 部分中使用 `exclude-newer` 字段，限制 uv 仅考虑在特定日期之前发布的分发版本。这对于提高脚本在稍后运行时的可重复性非常有用。
 
-The date must be specified as an [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339.html) timestamp
-(e.g., `2006-12-02T02:07:43Z`).
+日期必须以 [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339.html) 时间戳的形式指定（例如，`2006-12-02T02:07:43Z`）。
 
 ```python title="example.py"
 # /// script
@@ -233,9 +211,9 @@ import requests
 print(requests.__version__)
 ```
 
-## Using different Python versions
+## 使用不同的 Python 版本
 
-uv allows arbitrary Python versions to be requested on each script invocation, for example:
+uv 允许在每次脚本调用时请求任意 Python 版本，例如：
 
 ```python title="example.py"
 import sys
@@ -244,23 +222,22 @@ print(".".join(map(str, sys.version_info[:3])))
 ```
 
 ```console
-$ # Use the default Python version, may differ on your machine
+$ # 使用默认的 Python 版本，可能与你的机器不同
 $ uv run example.py
 3.12.6
 ```
 
 ```console
-$ # Use a specific Python version
+$ # 使用特定的 Python 版本
 $ uv run --python 3.10 example.py
 3.10.15
 ```
 
-See the [Python version request](../concepts/python-versions.md#requesting-a-version) documentation
-for more details on requesting Python versions.
+有关请求 Python 版本的更多详细信息，请参阅 [Python 版本请求](../concepts/python-versions.md#requesting-a-version) 文档。
 
-## Using GUI scripts
+## 使用 GUI 脚本
 
-On Windows `uv` will run your script ending with `.pyw` extension using `pythonw`:
+在 Windows 上，uv 会使用 `pythonw` 运行以 `.pyw` 扩展名结尾的脚本：
 
 ```python title="example.pyw"
 from tkinter import Tk, ttk
@@ -277,9 +254,9 @@ root.mainloop()
 PS> uv run example.pyw
 ```
 
-![Run Result](../assets/uv_gui_script_hello_world.png){: style="height:50px;width:150px"}
+![运行结果](../assets/uv_gui_script_hello_world.png){: style="height:50px;width:150px"}
 
-Similarly, it works with dependencies as well:
+同样，它也适用于带有依赖项的脚本：
 
 ```python title="example_pyqt.pyw"
 import sys
@@ -304,10 +281,10 @@ sys.exit(app.exec_())
 PS> uv run --with PyQt5 example_pyqt.pyw
 ```
 
-![Run Result](../assets/uv_gui_script_hello_world_pyqt.png){: style="height:50px;width:150px"}
+![运行结果](../assets/uv_gui_script_hello_world_pyqt.png){: style="height:50px;width:150px"}
 
-## Next steps
+## 下一步
 
-To learn more about `uv run`, see the [command reference](../reference/cli.md#uv-run).
+要了解更多关于 `uv run` 的信息，请参阅 [命令参考](../reference/cli.md#uv-run)。
 
-Or, read on to learn how to [run and install tools](./tools.md) with uv.
+或者，继续阅读以了解如何使用 uv [运行和安装工具](./tools.md)。

@@ -1,52 +1,44 @@
-# Locking and syncing
+# 锁定和同步
 
-### Creating the lockfile
+### 创建锁定文件
 
-The lockfile is created and updated during uv invocations that use the project environment, i.e.,
-`uv sync` and `uv run`. The lockfile may also be explicitly created or updated using `uv lock`:
+锁定文件会在使用项目环境的 uv 调用中自动创建和更新，即 `uv sync` 和 `uv run`。也可以使用 `uv lock` 显式地创建或更新锁定文件：
 
 ```console
 $ uv lock
 ```
 
-### Exporting the lockfile
+### 导出锁定文件
 
-If you need to integrate uv with other tools or workflows, you can export `uv.lock` to
-`requirements.txt` format with `uv export --format requirements-txt`. The generated
-`requirements.txt` file can then be installed via `uv pip install`, or with other tools like `pip`.
+如果需要将 uv 与其他工具或工作流集成，可以通过 `uv export --format requirements-txt` 将 `uv.lock` 导出为 `requirements.txt` 格式。生成的 `requirements.txt` 文件可以通过 `uv pip install` 或其他工具（如 `pip`）安装。
 
-In general, we recommend against using both a `uv.lock` and a `requirements.txt` file. If you find
-yourself exporting a `uv.lock` file, consider opening an issue to discuss your use case.
+通常，我们不建议同时使用 `uv.lock` 和 `requirements.txt` 文件。如果你发现自己需要导出 `uv.lock` 文件，可以考虑提一个问题，讨论你的使用场景。
 
-### Checking if the lockfile is up-to-date
+### 检查锁定文件是否是最新的
 
-To avoid updating the lockfile during `uv sync` and `uv run` invocations, use the `--frozen` flag.
+为了避免在 `uv sync` 和 `uv run` 调用时更新锁定文件，可以使用 `--frozen` 标志。
 
-To avoid updating the environment during `uv run` invocations, use the `--no-sync` flag.
+为了避免在 `uv run` 调用时更新环境，可以使用 `--no-sync` 标志。
 
-To assert the lockfile matches the project metadata, use the `--locked` flag. If the lockfile is not
-up-to-date, an error will be raised instead of updating the lockfile.
+为了确保锁定文件与项目元数据匹配，可以使用 `--locked` 标志。如果锁定文件不是最新的，将会引发错误，而不是更新锁定文件。
 
-### Upgrading locked package versions
+### 升级锁定的包版本
 
-By default, uv will prefer the locked versions of packages when running `uv sync` and `uv lock`.
-Package versions will only change if the project's dependency constraints exclude the previous,
-locked version.
+默认情况下，uv 在运行 `uv sync` 和 `uv lock` 时会优先使用锁定的包版本。当项目的依赖约束排除了先前锁定的版本时，包版本才会发生变化。
 
-To upgrade all packages:
+要升级所有包：
 
 ```console
 $ uv lock --upgrade
 ```
 
-To upgrade a single package to the latest version, while retaining the locked versions of all other
-packages:
+要将单个包升级到最新版本，同时保持其他所有包的锁定版本：
 
 ```console
 $ uv lock --upgrade-package <package>
 ```
 
-To upgrade a single package to a specific version:
+要将单个包升级到特定版本：
 
 ```console
 $ uv lock --upgrade-package <package>==<version>
@@ -54,5 +46,4 @@ $ uv lock --upgrade-package <package>==<version>
 
 !!! note
 
-    In all cases, upgrades are limited to the project's dependency constraints. For example, if the
-    project defines an upper bound for a package then an upgrade will not go beyond that version.
+    在所有情况下，升级都受到项目依赖约束的限制。例如，如果项目为某个包定义了上限版本，则升级不会超出该版本。

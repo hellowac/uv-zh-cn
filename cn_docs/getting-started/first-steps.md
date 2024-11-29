@@ -1,7 +1,6 @@
-# First steps with uv
+# uv 初始步骤
 
-After [installing uv](./installation.md), you can check that uv is available by running the `uv`
-command:
+在完成 [uv 安装](./installation.md) 后，可以通过运行 `uv` 命令检查 uv 是否可用：
 
 ```console
 $ uv
@@ -12,10 +11,10 @@ Usage: uv [OPTIONS] <COMMAND>
 ...
 ```
 
-You should see a help menu listing the available commands.
+您应该会看到一个列出可用命令的帮助菜单。
 
-## Next steps
+---
 
-Now that you've confirmed uv is installed, check out an [overview of features](./features.md), learn
-how to [get help](./help.md) if you run into any problems, or jump to the
-[guides](../guides/index.md) to start using uv.
+## 下一步
+
+现在您已经确认 uv 已成功安装，可以查看 [功能概览](./features.md)、了解遇到问题时如何 [获取帮助](./help.md)，或者直接跳转到 [指南](../guides/index.md) 开始使用 uv。

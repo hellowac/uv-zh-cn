@@ -1,22 +1,16 @@
-# Configuration files
+# 配置文件
 
-uv supports persistent configuration files at both the project- and user-level.
+uv 支持在项目级别和用户级别使用持久化配置文件。
 
-Specifically, uv will search for a `pyproject.toml` or `uv.toml` file in the current directory, or
-in the nearest parent directory.
+具体来说，uv 会在当前目录或最近的父目录中搜索 `pyproject.toml` 或 `uv.toml` 文件。
 
 !!! note
 
-    For `tool` commands, which operate at the user level, local configuration
-    files will be ignored. Instead, uv will exclusively read from user-level configuration
-    (e.g., `~/.config/uv/uv.toml`) and system-level configuration (e.g., `/etc/uv/uv.toml`).
+    对于在用户级别操作的 `tool` 命令，本地配置文件将被忽略。uv 将仅从用户级别配置（例如 `~/.config/uv/uv.toml`）和系统级别配置（例如 `/etc/uv/uv.toml`）中读取配置。
 
-In workspaces, uv will begin its search at the workspace root, ignoring any configuration defined in
-workspace members. Since the workspace is locked as a single unit, configuration is shared across
-all members.
+在工作区中，uv 会从工作区根目录开始搜索，忽略工作区成员中的任何配置。由于工作区作为一个单元被锁定，配置将在所有成员之间共享。
 
-If a `pyproject.toml` file is found, uv will read configuration from the `[tool.uv]` table. For
-example, to set a persistent index URL, add the following to a `pyproject.toml`:
+如果找到 `pyproject.toml` 文件，uv 会从 `[tool.uv]` 表中读取配置。例如，要设置持久化的索引 URL，可以在 `pyproject.toml` 中添加以下内容：
 
 ```toml title="pyproject.toml"
 [[tool.uv.index]]
@@ -24,11 +18,9 @@ url = "https://test.pypi.org/simple"
 default = true
 ```
 
-(If there is no such table, the `pyproject.toml` file will be ignored, and uv will continue
-searching in the directory hierarchy.)
+（如果没有找到该表，`pyproject.toml` 文件将被忽略，uv 会继续在目录层级中搜索。）
 
-uv will also search for `uv.toml` files, which follow an identical structure, but omit the
-`[tool.uv]` prefix. For example:
+uv 还会搜索 `uv.toml` 文件，它遵循相同的结构，但省略了 `[tool.uv]` 前缀。例如：
 
 ```toml title="uv.toml"
 [[index]]
@@ -38,52 +30,33 @@ default = true
 
 !!! note
 
-    `uv.toml` files take precedence over `pyproject.toml` files, so if both `uv.toml` and
-    `pyproject.toml` files are present in a directory, configuration will be read from `uv.toml`, and
-    `[tool.uv]` section in the accompanying `pyproject.toml` will be ignored.
+    `uv.toml` 文件优先于 `pyproject.toml` 文件，因此，如果目录中同时存在 `uv.toml` 和 `pyproject.toml` 文件，配置将从 `uv.toml` 读取，伴随的 `pyproject.toml` 中的 `[tool.uv]` 部分将被忽略。
 
-uv will also discover user-level configuration at `~/.config/uv/uv.toml` (or
-`$XDG_CONFIG_HOME/uv/uv.toml`) on macOS and Linux, or `%APPDATA%\uv\uv.toml` on Windows; and
-system-level configuration at `/etc/uv/uv.toml` (or `$XDG_CONFIG_DIRS/uv/uv.toml`) on macOS and
-Linux, or `%SYSTEMDRIVE%\ProgramData\uv\uv.toml` on Windows.
+uv 还会在 `~/.config/uv/uv.toml`（或 macOS 和 Linux 上的 `$XDG_CONFIG_HOME/uv/uv.toml`）或 Windows 上的 `%APPDATA%\uv\uv.toml` 发现用户级别的配置；在 `/etc/uv/uv.toml`（或 macOS 和 Linux 上的 `$XDG_CONFIG_DIRS/uv/uv.toml`）或 Windows 上的 `%SYSTEMDRIVE%\ProgramData\uv\uv.toml` 中发现系统级别的配置。
 
-User-and system-level configuration must use the `uv.toml` format, rather than the `pyproject.toml`
-format, as a `pyproject.toml` is intended to define a Python _project_.
+用户级和系统级配置必须使用 `uv.toml` 格式，而不是 `pyproject.toml` 格式，因为 `pyproject.toml` 是为定义 Python _项目_ 而设计的。
 
-If project-, user-, and system-level configuration files are found, the settings will be merged,
-with project-level configuration taking precedence over the user-level configuration, and user-level
-configuration taking precedence over the system-level configuration. (If multiple system-level
-configuration files are found, e.g., at both `/etc/uv/uv.toml` and `$XDG_CONFIG_DIRS/uv/uv.toml`,
-only the first-discovered file will be used, with XDG taking priority.)
+如果同时找到了项目级、用户级和系统级配置文件，这些设置将被合并，项目级配置优先于用户级配置，用户级配置优先于系统级配置。（如果发现多个系统级配置文件，例如 `/etc/uv/uv.toml` 和 `$XDG_CONFIG_DIRS/uv/uv.toml`，则只会使用第一个发现的文件，XDG 优先。）
 
-For example, if a string, number, or boolean is present in both the project- and user-level
-configuration tables, the project-level value will be used, and the user-level value will be
-ignored. If an array is present in both tables, the arrays will be concatenated, with the
-project-level settings appearing earlier in the merged array.
+例如，如果在项目级和用户级配置表中都出现了字符串、数字或布尔值，uv 将使用项目级的值，并忽略用户级的值。如果两个表中都有数组，数组会被合并，项目级设置会出现在合并后的数组前面。
 
-Settings provided via environment variables take precedence over persistent configuration, and
-settings provided via the command line take precedence over both.
+通过环境变量提供的设置优先于持久化配置，通过命令行提供的设置优先于两者。
 
-uv accepts a `--no-config` command-line argument which, when provided, disables the discovery of any
-persistent configuration.
+uv 接受一个 `--no-config` 命令行参数，当提供时，它会禁用任何持久化配置的发现。
 
-uv also accepts a `--config-file` command-line argument, which accepts a path to a `uv.toml` to use
-as the configuration file. When provided, this file will be used in place of _any_ discovered
-configuration files (e.g., user-level configuration will be ignored).
+uv 还接受一个 `--config-file` 命令行参数，接受一个 `uv.toml` 的路径，作为配置文件使用。当提供时，这个文件将替代_任何_ 已发现的配置文件（例如，用户级配置将被忽略）。
 
-## Settings
+## 设置
 
-See the [settings reference](../reference/settings.md) for an enumeration of the available settings.
+请参阅 [设置参考](../reference/settings.md)，查看可用的设置列表。
 
 ## `.env`
 
-`uv run` can load environment variables from dotenv files (e.g., `.env`, `.env.local`,
-`.env.development`), powered by the [`dotenvy`](https://github.com/allan2/dotenvy) crate.
+`uv run` 可以加载来自 dotenv 文件（例如 `.env`、`.env.local`、`.env.development`）的环境变量，功能由 [`dotenvy`](https://github.com/allan2/dotenvy) crate 提供支持。
 
-To load a `.env` file from a dedicated location, set the `UV_ENV_FILE` environment variable, or pass
-the `--env-file` flag to `uv run`.
+要从指定位置加载 `.env` 文件，可以设置 `UV_ENV_FILE` 环境变量，或将 `--env-file` 标志传递给 `uv run`。
 
-For example, to load environment variables from a `.env` file in the current working directory:
+例如，从当前工作目录加载 `.env` 文件中的环境变量：
 
 ```console
 $ echo "MY_VAR='Hello, world!'" > .env
@@ -91,32 +64,19 @@ $ uv run --env-file .env -- python -c 'import os; print(os.getenv("MY_VAR"))'
 Hello, world!
 ```
 
-The `--env-file` flag can be provided multiple times, with subsequent files overriding values
-defined in previous files. To provide multiple files via the `UV_ENV_FILE` environment variable,
-separate the paths with a space (e.g., `UV_ENV_FILE="/path/to/file1 /path/to/file2"`).
+`--env-file` 标志可以多次提供，后续文件将覆盖先前文件中定义的值。要通过 `UV_ENV_FILE` 环境变量提供多个文件，可以用空格分隔路径（例如，`UV_ENV_FILE="/path/to/file1 /path/to/file2"`）。
 
-To disable dotenv loading (e.g., to override `UV_ENV_FILE` or the `--env-file` command-line
-argument), set the `UV_NO_ENV_FILE` environment variable to `1`, or pass the`--no-env-file` flag to
-`uv run`.
+要禁用 dotenv 加载（例如，覆盖 `UV_ENV_FILE` 或 `--env-file` 命令行参数），将 `UV_NO_ENV_FILE` 环境变量设置为 `1`，或将 `--no-env-file` 标志传递给 `uv run`。
 
-If the same variable is defined in the environment and in a `.env` file, the value from the
-environment will take precedence.
+如果同一个变量在环境中和 `.env` 文件中都有定义，则环境中的值将优先。
 
-## Configuring the pip interface
+## 配置 pip 接口
 
-A dedicated [`[tool.uv.pip]`](../reference/settings.md#pip) section is provided for configuring
-_just_ the `uv pip` command line interface. Settings in this section will not apply to `uv` commands
-outside the `uv pip` namespace. However, many of the settings in this section have corollaries in
-the top-level namespace which _do_ apply to the `uv pip` interface unless they are overridden by a
-value in the `uv.pip` section.
+为配置仅用于 `uv pip` 命令行接口，提供了一个专用的 [`[tool.uv.pip]`](../reference/settings.md#pip) 部分。此部分中的设置不会应用于 `uv` 命令的其他命名空间。然而，许多此部分中的设置在顶级命名空间中也有对应项，这些设置将应用于 `uv pip` 接口，除非在 `uv.pip` 部分中被覆盖。
 
-The `uv.pip` settings are designed to adhere closely to pip's interface and are declared separately
-to retain compatibility while allowing the global settings to use alternate designs (e.g.,
-`--no-build`).
+`uv.pip` 设置旨在与 pip 接口保持高度一致，并单独声明，以保持兼容性，同时允许全局设置使用不同的设计（例如，`--no-build`）。
 
-As an example, setting the `index-url` under `[tool.uv.pip]`, as in the following `pyproject.toml`,
-would only affect the `uv pip` subcommands (e.g., `uv pip install`, but not `uv sync`, `uv lock`, or
-`uv run`):
+例如，在以下 `pyproject.toml` 中设置 `index-url`，只会影响 `uv pip` 子命令（例如 `uv pip install`），而不会影响 `uv sync`、`uv lock` 或 `uv run` 等命令：
 
 ```toml title="pyproject.toml"
 [tool.uv.pip]

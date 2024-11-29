@@ -1,33 +1,28 @@
-# Running commands in projects
+# 在项目中运行命令
 
-When working on a project, it is installed into virtual environment at `.venv`. This environment is
-isolated from the current shell by default, so invocations that require the project, e.g.,
-`python -c "import example"`, will fail. Instead, use `uv run` to run commands in the project
-environment:
+在进行项目开发时，项目会安装到虚拟环境 `.venv` 中。默认情况下，该环境与当前的 shell 是隔离的，因此任何需要项目的命令，例如 `python -c "import example"`，都会失败。相反，使用 `uv run` 来在项目环境中运行命令：
 
 ```console
 $ uv run python -c "import example"
 ```
 
-When using `run`, uv will ensure that the project environment is up-to-date before running the given
-command.
+使用 `run` 时，uv 会在运行给定命令之前确保项目环境是最新的。
 
-The given command can be provided by the project environment or exist outside of it, e.g.:
+给定的命令可以由项目环境提供，也可以在项目环境外部存在，例如：
 
 ```console
-$ # Presuming the project provides `example-cli`
+$ # 假设项目提供了 `example-cli`
 $ uv run example-cli foo
 
-$ # Running a `bash` script that requires the project to be available
+$ # 运行一个需要项目可用的 `bash` 脚本
 $ uv run bash scripts/foo.sh
 ```
 
-## Requesting additional dependencies
+## 请求额外的依赖 {: #requesting-additional-dependencies}
 
-Additional dependencies or different versions of dependencies can be requested per invocation.
+可以为每次调用请求额外的依赖或不同版本的依赖。
 
-The `--with` option is used to include a dependency for the invocation, e.g., to request a different
-version of `httpx`:
+使用 `--with` 选项来为当前调用包含一个依赖，例如，请求不同版本的 `httpx`：
 
 ```console
 $ uv run --with httpx==0.26.0 python -c "import httpx; print(httpx.__version__)"
@@ -36,16 +31,13 @@ $ uv run --with httpx==0.25.0 python -c "import httpx; print(httpx.__version__)"
 0.25.0
 ```
 
-The requested version will be respected regardless of the project's requirements. For example, even
-if the project requires `httpx==0.24.0`, the output above would be the same.
+请求的版本会被优先使用，而不管项目的需求是什么。例如，即使项目要求 `httpx==0.24.0`，上面的输出也会保持不变。
 
-## Running scripts
+## 运行脚本
 
-Scripts that declare inline metadata are automatically executed in environments isolated from the
-project. See the [scripts guide](../../guides/scripts.md#declaring-script-dependencies) for more
-details.
+声明了内联元数据的脚本会在与项目隔离的环境中自动执行。有关更多细节，请参见 [脚本指南](../../guides/scripts.md#declaring-script-dependencies)。
 
-For example, given a script:
+例如，给定一个脚本：
 
 ```python title="example.py"
 # /// script
@@ -61,5 +53,4 @@ data = resp.json()
 print([(k, v["title"]) for k, v in data.items()][:10])
 ```
 
-The invocation `uv run example.py` would run _isolated_ from the project with only the given
-dependencies listed.
+调用 `uv run example.py` 将会在与项目隔离的环境中运行，并且只会使用给定的依赖项。

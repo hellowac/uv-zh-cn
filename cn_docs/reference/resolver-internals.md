@@ -1,89 +1,50 @@
-# Resolver internals
+# 解析器内部原理
 
 !!! tip
 
-    This document focuses on the internal workings of uv's resolver. For using uv, see the
-    [resolution concept](../concepts/resolution.md) documentation.
+    本文档主要讲解 uv 解析器的内部工作原理。有关 uv 的使用，请参阅
+    [解析概念](../concepts/resolution.md) 文档。
 
-## Resolver
+## 解析器
 
-As defined in a textbook, resolution, or finding a set of version to install from a given set of
-requirements, is equivalent to the
-[SAT problem](https://en.wikipedia.org/wiki/Boolean_satisfiability_problem) and thereby NP-complete:
-in the worst case you have to try all possible combinations of all versions of all packages and
-there are no general, fast algorithms. In practice, this is misleading for a number of reasons:
+根据教科书的定义，解析或从给定的一组需求中找到要安装的版本集，相当于
+[SAT 问题](https://en.wikipedia.org/wiki/Boolean_satisfiability_problem)，因此是 NP 完全问题：
+在最坏的情况下，你必须尝试所有可能的版本组合，并且没有通用的、快速的算法。实际上，这种说法有很多误导之处，原因如下：
 
-- The slowest part of resolution in uv is loading package and version metadata, even if it's cached.
-- There are many possible solutions, but some are preferable to others. For example, we generally
-  prefer using the latest version of packages.
-- Package dependencies are complex, e.g., there are contiguous versions ranges — not arbitrary
-  boolean inclusion/exclusions of versions, adjacent releases often have the same or similar
-  requirements, etc.
-- For most resolutions, the resolver doesn't need to backtrack, picking versions iteratively is
-  sufficient. If there are version preferences from a previous resolution, barely any work needs to
-  be done.
-- When resolution fails, more information is needed than a message that there is no solution (as is
-  seen in SAT solvers). Instead, the resolver should produce an understandable error trace that
-  states which packages are involved in away to allows a user to remove the conflict.
+- uv 解析中最慢的部分是加载包和版本的元数据，即使这些元数据已经被缓存。
+- 存在许多可能的解决方案，但其中一些方案比其他方案更优。例如，我们通常偏好使用最新版本的包。
+- 包依赖关系非常复杂，例如，存在连续的版本范围——并不是任意的布尔包含/排除版本，相邻的发布版本通常有相同或相似的需求等。
+- 对于大多数解析，解析器不需要回溯，逐步选择版本就足够了。如果之前的解析中有版本偏好，几乎不需要做任何工作。
+- 当解析失败时，所需的信息比 SAT 求解器中的“没有解决方案”的消息更多。解析器应该提供一条可理解的错误跟踪，明确指出哪些包涉及到冲突，从而允许用户解决冲突。
 
-uv uses [pubgrub-rs](https://github.com/pubgrub-rs/pubgrub), the Rust implementation of
-[PubGrub](https://nex3.medium.com/pubgrub-2fb6470504f), an incremental version solver. PubGrub in uv
-works in the following steps:
+uv 使用 [pubgrub-rs](https://github.com/pubgrub-rs/pubgrub)，这是 [PubGrub](https://nex3.medium.com/pubgrub-2fb6470504f) 的 Rust 实现，是一个增量版本求解器。PubGrub 在 uv 中的工作步骤如下：
 
-- Start with a partial solution that declares which packages versions have been selected and which
-  are undecided. Initially, only a virtual root package is decided.
-- The highest priority package is selected from the undecided packages. Package with URLs (including
-  file, git, etc.) have the highest priority, then those with more exact specifiers (such as `==`),
-  then those with less strict specifiers. Inside each category, packages are ordered by when they
-  were first seen (i.e. order in a file), making the resolution deterministic.
-- A version is picked for the selected package. The version must works with all specifiers from the
-  requirements in the partial solution and must not be previously marked as incompatible. The
-  resolver prefers versions from a lockfile (`uv.lock` or `-o requirements.txt`) and those installed
-  in the current environment. Versions are checked from highest to lowest (unless using an
-  alternative [resolution strategy](../concepts/resolution.md#resolution-strategy)).
-- All requirements of the selected package version are added to the undecided packages. uv
-  prefetches their metadata in the background to improve performance.
-- The process is either repeated with the next package unless a conflict is detected, in which the
-  resolver will backtrack. For example, the partial solution contains, among other packages, `a 2`
-  then `b 2` with the requirements `a 2 -> c 1` and `b 2 -> c 2`. No compatible version of `c` can
-  be found. PubGrub can determine this was caused by `a 2` and `b 2` and add the incompatibility
-  `{a 2, b 2}`, meaning that when either is picked, the other cannot be selected. The partial
-  solution is restored to `a 2` with the tracked incompatibility and the resolver attempts to pick a
-  new version for `b`.
+- 从一个部分解决方案开始，声明哪些包的版本已被选定，哪些版本尚未决定。最初，只有一个虚拟的根包被确定。
+- 从未决定的包中选择优先级最高的包。带有 URL（包括文件、git 等）的包优先级最高，然后是那些带有更精确的版本说明符（如 `==`）的包，再然后是那些带有较宽松说明符的包。在每个类别内部，包按首次出现的顺序排序（即文件中的顺序），使解析具有确定性。
+- 为选定的包选择一个版本。该版本必须与部分解决方案中的所有需求说明符兼容，并且不能被标记为不兼容。解析器优先使用来自锁文件（`uv.lock` 或 `-o requirements.txt`）的版本，以及当前环境中已安装的版本。版本会从最高到最低检查（除非使用了其他 [解析策略](../concepts/resolution.md#resolution-strategy)）。
+- 选定包版本的所有需求会被加入到未决定的包中。uv 会在后台预取它们的元数据以提高性能。
+- 如果没有检测到冲突，流程会继续进行，重复选择下一个包。否则，解析器会回溯。例如，部分解决方案包含了包 `a 2` 和 `b 2`，并且有需求 `a 2 -> c 1` 和 `b 2 -> c 2`。无法找到兼容版本的 `c`。PubGrub 可以确定这是由 `a 2` 和 `b 2` 引起的，并将不兼容项 `{a 2, b 2}` 添加到解决方案中，表示选择其中一个时，另一个不能被选中。部分解决方案会恢复为 `a 2`，并跟踪该不兼容项，解析器会尝试为 `b` 选择一个新版本。
 
-Eventually, the resolver either picks compatible versions for all packages (a successful resolution)
-or there is an incompatibility including the virtual "root" package which defines the versions
-requested by the user. An incompatibility with the root package indicates that whatever versions of
-the root dependencies and their transitive dependencies are picked, there will always be a conflict.
-From the incompatibilities tracked in PubGrub, an error message is constructed to enumerate the
-involved packages.
+最终，解析器要么为所有包选择兼容版本（成功解析），要么会在包含虚拟“根”包的地方出现不兼容，这个根包定义了用户要求的版本。与根包的不兼容表示无论选择根依赖及其传递依赖的哪些版本，总会发生冲突。根据 PubGrub 中跟踪的不兼容项，会构建一条错误消息，列出相关的包。
 
 !!! tip
 
-    For more details on the PubGrub algorithm, see [Internals of the PubGrub
-    algorithm](https://pubgrub-rs-guide.pages.dev/internals/intro).
+    要了解更多关于 PubGrub 算法的细节，请参阅 [PubGrub 算法的内部实现](https://pubgrub-rs-guide.pages.dev/internals/intro)。
 
-## Forking
+## 分叉(Forking)
 
-Python resolvers historically didn't support backtracking, and even with backtracking, resolution
-was usually limited to single environment, which one specific architecture, operating system, Python
-version, and Python implementation. Some packages use contradictory requirements for different
-environments, for example:
+Python 解析器历史上不支持回溯，即便有回溯功能，解析通常也仅限于单一环境，一个特定的架构、操作系统、Python 版本和 Python 实现。一些包对于不同环境使用了相互矛盾的要求，例如：
 
 ```python
 numpy>=2,<3 ; python_version >= "3.11"
 numpy>=1.16,<2 ; python_version < "3.11"
 ```
 
-Since Python only allows one version of each package, a naive resolver would error here. Inspired by
-[Poetry](https://github.com/python-poetry/poetry), uv uses a forking resolver: whenever there are
-multiple requirements for a package with different markers, the resolution is split.
+由于 Python 只允许每个包使用一个版本，一个简单的解析器在这里会出错。受到 [Poetry](https://github.com/python-poetry/poetry) 启发，uv 使用了分叉解析器：每当包有多个带有不同标记的要求时，解析会被分割。
 
-In the above example, the partial solution would be split into two resolutions, one for
-`python_version >= "3.11"` and one for `python_version < "3.11"`.
+在上面的例子中，部分解决方案将分成两个解析，一个用于 `python_version >= "3.11"`，另一个用于 `python_version < "3.11"`。
 
-If markers overlap or are missing a part of the marker space, the resolver splits additional times —
-there can be many forks per package. For example, given:
+如果标记重叠或缺少标记的某一部分，解析器会再次分叉——每个包可能会有多个分叉。例如，给定：
 
 ```python
 flask > 1 ; sys_platform == 'darwin'
@@ -91,45 +52,22 @@ flask > 2 ; sys_platform == 'win32'
 flask
 ```
 
-A fork would be created for `sys_platform == 'darwin'`, for `sys_platform == 'win32'`, and for
-`sys_platform != 'darwin' and sys_platform != 'win32'`.
+将会为 `sys_platform == 'darwin'`、`sys_platform == 'win32'` 和 `sys_platform != 'darwin' and sys_platform != 'win32'` 分别创建一个分叉。
 
-Forks can be nested, e.g., each fork is dependent on any previous forks that occurred. Forks with
-identical packages are merged to keep the number of forks low.
+分叉可以是嵌套的，即每个分叉都依赖于任何先前发生的分叉。具有相同包的分叉会合并，以保持分叉数量较少。
 
 !!! tip
 
-    Forking can be observed in the logs of `uv lock -v` by looking for
-    `Splitting resolution on ...`, `Solving split ... (requires-python: ...)` and `Split ... resolution
-    took ...`.
+    可以通过查看 `uv lock -v` 日志中的
+    `Splitting resolution on ...`、`Solving split ... (requires-python: ...)` 和 `Split ... resolution
+    took ...` 来观察分叉。
 
-One difficulty in a forking resolver is that where splits occur is dependent on the order packages
-are seen, which is in turn dependent on the preferences, e.g., from `uv.lock`. So it is possible for
-the resolver to solve the requirements with specific forks, write this to the lockfile, and when the
-resolver is invoked again, a different solution is found because the preferences result in different
-fork points. To avoid this, the `resolution-markers` of each fork and each package that diverges
-between forks is written to the lockfile. When performing a new resolution, the forks from the
-lockfile are used to ensure the resolution is stable. When requirements change, new forks may be
-added to the saved forks.
+分叉解析器的一个难点是，分叉发生的位置依赖于包的出现顺序，而包的出现顺序又依赖于优先级，例如来自 `uv.lock` 的优先级。因此，解析器可能会根据特定的分叉解决需求，写入锁文件，当解析器再次被调用时，可能会找到不同的解决方案，因为优先级导致分叉点不同。为了避免这种情况，锁文件中会记录每个分叉的 `resolution-markers` 和每个在分叉间出现差异的包。进行新的解析时，会使用锁文件中的分叉信息来确保解析稳定。当需求发生变化时，可能会向已保存的分叉中添加新的分叉。
 
 ## Requires-python
 
-To ensure that a resolution with `requires-python = ">=3.9"` can actually be installed for the
-included Python versions, uv requires that all dependencies have the same minimum Python version.
-Package versions that declare a higher minimum Python version, e.g., `requires-python = ">=3.10"`,
-are rejected, because a resolution with that version can't be installed on Python 3.9. For
-simplicity and forward compatibility, only lower bounds in `requires-python` are respected. For
-example, if a package declares `requires-python = ">=3.8,<4"`, the `<4` marker is not propagated to
-the entire resolution.
+为了确保 `requires-python = ">=3.9"` 的解析能够在所包含的 Python 版本上正确安装，uv 要求所有依赖项有相同的最低 Python 版本。声明了更高最低 Python 版本的包版本，例如 `requires-python = ">=3.10"`，会被拒绝，因为该版本无法在 Python 3.9 上安装。为了简化和向前兼容，`requires-python` 中只会尊重下限。例如，如果一个包声明 `requires-python = ">=3.8,<4"`，则 `<4` 标记不会传播到整个解析过程中。
 
-## Wheel tags
+## Wheel 标签
 
-While uv's resolution is universal with respect to environment markers, this doesn't extend to wheel
-tags. Wheel tags can encode the Python version, Python implementation, operating system, and
-architecture. For example, `torch-2.4.0-cp312-cp312-manylinux2014_aarch64.whl` is only compatible
-with CPython 3.12 on arm64 Linux with `glibc>=2.17` (per the `manylinux2014` policy), while
-`tqdm-4.66.4-py3-none-any.whl` works with all Python 3 versions and interpreters on any operating
-system and architecture. Most projects have a universally compatible source distribution that can be
-used when attempted to install a package that has no compatible wheel, but some packages, such as
-`torch`, don't publish a source distribution. In this case an installation on, e.g., Python 3.13, an
-uncommon operating system, or architecture, will fail and complain that there is no matching wheel.
+虽然 uv 的解析对于环境标记是通用的，但这并不扩展到轮子标签（wheel tags）。轮子标签可以编码 Python 版本、Python 实现、操作系统和架构。例如，`torch-2.4.0-cp312-cp312-manylinux2014_aarch64.whl` 仅与具有 `glibc>=2.17` 的 arm64 Linux 上的 CPython 3.12 兼容，而 `tqdm-4.66.4-py3-none-any.whl` 与所有 Python 3 版本和任何操作系统、架构兼容。大多数项目都有一个通用的源分发包，可以在安装没有兼容轮子的包时使用，但一些包，如 `torch`，并不发布源分发包。在这种情况下，例如在 Python 3.13、非主流操作系统或架构上进行安装时，将失败并报告没有匹配的轮子。

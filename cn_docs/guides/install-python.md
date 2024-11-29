@@ -1,100 +1,67 @@
-# Installing Python
+# 安装 Python
 
-If Python is already installed on your system, uv will
-[detect and use](#using-an-existing-python-installation) it without configuration. However, uv can
-also install and manage Python versions for you.
+如果您的系统已经安装了 Python，uv 会在无需配置的情况下
+[检测并使用](#using-an-existing-python-installation) 它。不过，uv 也可以为您安装和管理 Python 版本。
 
 !!! tip
 
-    uv will [automatically fetch Python versions](#automatic-python-downloads) as needed — you don't need to install Python to get started.
+    uv 会根据需要[自动下载 Python 版本](#automatic-python-downloads) — 您无需安装 Python 即可开始使用。
 
-<!-- TODO(zanieb): I don't love this heading. -->
+## 开始使用
 
-## Getting started
-
-To install the latest Python version:
+要安装最新的 Python 版本：
 
 ```console
 $ uv python install
 ```
 
-This will install a uv-managed Python version even if there is already a Python installation on your
-system. If you've previously installed Python with uv, a new version will not be installed.
+即使您的系统上已安装了 Python，运行此命令也会安装一个 uv 管理的 Python 版本。如果您之前使用 uv 安装了 Python，将不会再次安装新版本。
 
 !!! note
 
-    Python does not publish official distributable binaries. As such, uv uses third-party distributions from the [`python-build-standalone`](https://github.com/indygreg/python-build-standalone) project. The project is partially maintained by the uv maintainers and is used by other prominent Python projects (e.g., [Rye](https://github.com/astral-sh/rye), [Bazel](https://github.com/bazelbuild/rules_python)). See the [Python distributions](../concepts/python-versions.md#managed-python-distributions) documentation for more details.
+    Python 并不发布官方的可分发二进制文件。因此，uv 使用来自 [`python-build-standalone`](https://github.com/indygreg/python-build-standalone) 项目的第三方分发版本。该项目部分由 uv 的维护者维护，并被其他著名的 Python 项目使用（例如 [Rye](https://github.com/astral-sh/rye)、[Bazel](https://github.com/bazelbuild/rules_python)）。更多细节请参阅 [Python 分发版本](../concepts/python-versions.md#managed-python-distributions) 文档。
 
-<!-- TODO(zanieb): Restore when Python shim management is added
-Note that when an automatic Python installation occurs, the `python` command will not be added to the shell. Use `uv python install-shim` to ensure the `python` shim is installed.
+## 安装特定版本
 
-Once Python is installed, it can be invoked via `python`:
-
-```console
-$ python --version
-```
-
-To prevent uv from managing Python system-wide, provide the `--no-shim` option during installation.
--->
-
-Once Python is installed, it will be used by `uv` commands automatically.
-
-!!! important
-
-    When Python is installed by uv, it will not be available globally (i.e. via the `python` command).
-    Support for this feature is planned for a future release. In the meantime, use
-    [`uv run`](../guides/scripts.md#using-different-python-versions) or
-    [create and activate a virtual environment](../pip/environments.md) to use `python` directly.
-
-## Installing a specific version
-
-To install a specific Python version:
+要安装特定的 Python 版本：
 
 ```console
 $ uv python install 3.12
 ```
 
-To install multiple Python versions:
+要安装多个 Python 版本：
 
 ```console
 $ uv python install 3.11 3.12
 ```
 
-To install an alternative Python implementation, e.g. PyPy:
+要安装其他 Python 实现，例如 PyPy：
 
 ```console
 $ uv python install pypy@3.10
 ```
 
-See the [`python install`](../concepts/python-versions.md#installing-a-python-version) documentation
-for more details.
+有关更多信息，请参见 [`python install`](../concepts/python-versions.md#installing-a-python-version) 文档。
 
-## Viewing Python installations
+## 查看已安装的 Python 版本
 
-To view available and installed Python versions:
+要查看可用和已安装的 Python 版本：
 
 ```console
 $ uv python list
 ```
 
-See the [`python list`](../concepts/python-versions.md#viewing-available-python-versions)
-documentation for more details.
+有关更多信息，请参阅 [`python list`](../concepts/python-versions.md#viewing-available-python-versions) 文档。
 
-<!--TODO(zanieb): The above should probably link to a CLI reference and that content should be moved out of that file -->
+## 自动下载 Python 版本
 
-## Automatic Python downloads
-
-Note that Python does not need to be explicitly installed to use uv. By default, uv will
-automatically download Python versions when they are required. For example, the following would
-download Python 3.12 if it was not installed:
+请注意，使用 uv 时并不需要显式安装 Python。默认情况下，uv 会在需要时自动下载 Python 版本。例如，如果未安装 Python 3.12，以下命令会自动下载并使用它：
 
 ```console
 $ uv run --python 3.12 python -c 'print("hello world")'
 ```
 
-Even if a specific Python version is not requested, uv will download the latest version on demand.
-For example, the following will create a new virtual environment and download a managed Python
-version if Python is not found:
+即使未明确请求特定的 Python 版本，uv 也会根据需要下载最新版本。例如，以下命令会创建一个新的虚拟环境，如果找不到 Python，则下载一个管理的 Python 版本：
 
 ```console
 $ uv venv
@@ -102,27 +69,16 @@ $ uv venv
 
 !!! tip
 
-    Automatic Python downloads can be [easily disabled](../concepts/python-versions.md#disabling-automatic-python-downloads) if you want more control over when Python is downloaded.
+    如果您希望更好地控制 Python 何时被下载，可以[轻松禁用](../concepts/python-versions.md#disabling-automatic-python-downloads) 自动下载功能。
 
-<!-- TODO(zanieb): Restore when Python shim management is added
-Note that when an automatic Python installation occurs, the `python` command will not be added to the shell. Use `uv python install-shim` to ensure the `python` shim is installed.
--->
+## 使用现有的 Python 安装 {: #using-an-existing-python-installation}
 
-## Using an existing Python installation
+如果系统上已存在 Python 安装，uv 会自动使用它。对此行为无需额外配置：uv 会使用系统中的 Python，只要它满足命令执行的要求。有关详细信息，请参见 [Python 发现](../concepts/python-versions.md#discovery-of-python-versions) 文档。
 
-uv will use existing Python installations if present on your system. There is no configuration
-necessary for this behavior: uv will use the system Python if it satisfies the requirements of the
-command invocation. See the
-[Python discovery](../concepts/python-versions.md#discovery-of-python-versions) documentation for
-details.
+要强制 uv 使用系统 Python，可以提供 `--python-preference only-system` 选项。有关详细信息，请参见 [Python 版本偏好设置](../concepts/python-versions.md#adjusting-python-version-preferences) 文档。
 
-To force uv to use the system Python, provide the `--python-preference only-system` option. See the
-[Python version preference](../concepts/python-versions.md#adjusting-python-version-preferences)
-documentation for more details.
+## 下一步
 
-## Next steps
+要了解更多关于 `uv python` 的信息，请查看 [Python 版本概念](../concepts/python-versions.md) 页面和 [命令参考](../reference/cli.md#uv-python)。
 
-To learn more about `uv python`, see the [Python version concept](../concepts/python-versions.md)
-page and the [command reference](../reference/cli.md#uv-python).
-
-Or, read on to learn how to [run scripts](./scripts.md) and invoke Python with uv.
+或者，继续阅读了解如何使用 uv [运行脚本](./scripts.md) 并调用 Python。

@@ -1,4 +1,4 @@
-site_name: uv
+site_name: uv-zh-cn
 theme:
   name: material
   logo: assets/logo-letter.svg
@@ -37,11 +37,11 @@ theme:
         name: Switch to system preference
   custom_dir: docs/.overrides
 repo_url: https://github.com/hellowac/uv-zh-cn
-repo_name: uv
+repo_name: uv-zh-cn
 site_author: charliermarsh
 site_url: https://hellowac.github.io/uv-zh-cn
 site_dir: site/uv
-docs_dir: 'cn_docs'
+docs_dir: "cn_docs"
 markdown_extensions:
   - admonition
   - pymdownx.details
@@ -126,7 +126,7 @@ nav:
           - 使用工作区: concepts/projects/workspaces.md
       - 工具: concepts/tools.md
       - Python 版本: concepts/python-versions.md
-      - 解决方案: concepts/resolution.md
+      - 解析: concepts/resolution.md
       - 缓存: concepts/cache.md
   - 配置:
       - configuration/index.md
@@ -149,7 +149,7 @@ nav:
       - 设置: reference/settings.md
       - 构建失败: reference/build_failures.md
       - 解析器: reference/resolver-internals.md
-      - 基本: reference/benchmarks.md
+      - 性能基准: reference/benchmarks.md
       - 版本控制: reference/versioning.md
       - 平台支持: reference/platforms.md
 validation:

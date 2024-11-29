@@ -1,18 +1,14 @@
-# Using uv with FastAPI
+# 在 FastAPI 中使用 uv
 
-[FastAPI](https://github.com/fastapi/fastapi) is a modern, high-performance Python web framework.
-You can use uv to manage your FastAPI project, including installing dependencies, managing
-environments, running FastAPI applications, and more.
+[FastAPI](https://github.com/fastapi/fastapi) 是一个现代的高性能 Python Web 框架。你可以使用 uv 来管理 FastAPI 项目，包括安装依赖、管理环境、运行 FastAPI 应用程序等。
 
 !!! note
 
-    You can view the source code for this guide in the [uv-fastapi-example](https://github.com/astral-sh/uv-fastapi-example) repository.
+    你可以在 [uv-fastapi-example](https://github.com/astral-sh/uv-fastapi-example) 仓库中查看本指南的源代码。
 
-## Migrating an existing FastAPI project
+## 迁移现有的 FastAPI 项目
 
-As an example, consider the sample application defined in the
-[FastAPI documentation](https://fastapi.tiangolo.com/tutorial/bigger-applications/), structured as
-follows:
+作为示例，考虑 FastAPI 文档中定义的示例应用程序，其结构如下：
 
 ```plaintext
 project
@@ -29,22 +25,21 @@ project
         └── admin.py
 ```
 
-To use uv with this application, inside the `project` directory run:
+要在这个应用程序中使用 uv，在 `project` 目录下运行：
 
 ```console
 $ uv init --app
 ```
 
-This creates an [project with an application layout](../../concepts/projects/init.md#applications)
-and a `pyproject.toml` file.
+这将创建一个 [带有应用程序布局的项目](../../concepts/projects/init.md#applications) 和一个 `pyproject.toml` 文件。
 
-Then, add a dependency on FastAPI:
+接下来，添加 FastAPI 依赖：
 
 ```console
 $ uv add fastapi --extra standard
 ```
 
-You should now have the following structure:
+此时，你应该得到如下的项目结构：
 
 ```plaintext
 project
@@ -62,7 +57,7 @@ project
         └── admin.py
 ```
 
-And the contents of the `pyproject.toml` file should look something like this:
+`pyproject.toml` 文件的内容应该类似于以下内容：
 
 ```toml title="pyproject.toml"
 [project]
@@ -76,54 +71,51 @@ dependencies = [
 ]
 ```
 
-From there, you can run the FastAPI application with:
+从此，你可以通过以下命令运行 FastAPI 应用程序：
 
 ```console
 $ uv run fastapi dev
 ```
 
-`uv run` will automatically resolve and lock the project dependencies (i.e., create a `uv.lock`
-alongside the `pyproject.toml`), create a virtual environment, and run the command in that
-environment.
+`uv run` 将自动解析并锁定项目依赖（即创建一个 `uv.lock` 文件和 `pyproject.toml` 文件），创建一个虚拟环境，并在该环境中运行命令。
 
-Test the app by opening http://127.0.0.1:8000/?token=jessica in a web browser.
+在 Web 浏览器中打开 `http://127.0.0.1:8000/?token=jessica` 来测试应用程序。
 
-## Deployment
+## 部署
 
-To deploy the FastAPI application with Docker, you can use the following `Dockerfile`:
+要使用 Docker 部署 FastAPI 应用程序，你可以使用以下 `Dockerfile`：
 
 ```dockerfile title="Dockerfile"
 FROM python:3.12-slim
 
-# Install uv.
+# 安装 uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Copy the application into the container.
+# 将应用程序复制到容器中
 COPY . /app
 
-# Install the application dependencies.
+# 安装应用程序依赖
 WORKDIR /app
 RUN uv sync --frozen --no-cache
 
-# Run the application.
+# 运行应用程序
 CMD ["/app/.venv/bin/fastapi", "run", "app/main.py", "--port", "80", "--host", "0.0.0.0"]
 ```
 
-Build the Docker image with:
+使用以下命令构建 Docker 镜像：
 
 ```console
 $ docker build -t fastapi-app .
 ```
 
-Run the Docker container locally with:
+使用以下命令在本地运行 Docker 容器：
 
 ```console
 $ docker run -p 8000:80 fastapi-app
 ```
 
-Navigate to http://127.0.0.1:8000/?token=jessica in your browser to verify that the app is running
-correctly.
+在浏览器中访问 `http://127.0.0.1:8000/?token=jessica` 来验证应用程序是否正确运行。
 
 !!! tip
 
-    For more on using uv with Docker, see the [Docker guide](./docker.md).
+    关于如何在 Docker 中使用 uv，参见 [Docker 指南](./docker.md)。

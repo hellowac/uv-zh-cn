@@ -1,12 +1,10 @@
-# Using uv in GitHub Actions
+# 在 GitHub Actions 中使用 uv
 
-## Installation
+## 安装
 
-For use with GitHub Actions, we recommend the official
-[`astral-sh/setup-uv`](https://github.com/astral-sh/setup-uv) action, which installs uv, adds it to
-PATH, (optionally) persists the cache, and more, with support for all uv-supported platforms.
+为了在 GitHub Actions 中使用 uv，推荐使用官方的 [`astral-sh/setup-uv`](https://github.com/astral-sh/setup-uv) 操作，该操作会安装 uv、将其添加到 PATH（可选地）持久化缓存等，支持所有 uv 支持的平台。
 
-To install the latest version of uv:
+要安装最新版本的 uv：
 
 ```yaml title="example.yml" hl_lines="11-12"
 name: Example
@@ -23,7 +21,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
 ```
 
-It is considered best practice to pin to a specific uv version, e.g., with:
+最佳实践是将 uv 固定到特定版本，例如：
 
 ```yaml title="example.yml" hl_lines="14 15"
 name: Example
@@ -39,13 +37,13 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          # Install a specific version of uv.
+          # 安装特定版本的 uv。
           version: "0.5.5"
 ```
 
-## Setting up Python
+## 设置 Python
 
-Python can be installed with the `python install` command:
+可以使用 `python install` 命令安装 Python：
 
 ```yaml title="example.yml" hl_lines="14 15"
 name: Example
@@ -65,9 +63,9 @@ jobs:
         run: uv python install
 ```
 
-This will respect the Python version pinned in the project.
+这将尊重项目中指定的 Python 版本。
 
-Or, when using a matrix, as in:
+或者，在使用矩阵时，如下所示：
 
 ```yaml title="example.yml"
 strategy:
@@ -78,7 +76,7 @@ strategy:
       - "3.12"
 ```
 
-Provide the version to the `python install` invocation:
+将版本传递给 `python install` 命令：
 
 ```yaml title="example.yml" hl_lines="14 15"
 name: Example
@@ -98,12 +96,9 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 ```
 
-Alternatively, the official GitHub `setup-python` action can be used. This can be faster, because
-GitHub caches the Python versions alongside the runner.
+另外，也可以使用 GitHub 官方的 `setup-python` 操作。这可能会更快，因为 GitHub 会缓存 Python 版本和运行器。
 
-Set the
-[`python-version-file`](https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#using-the-python-version-file-input)
-option to use the pinned version for the project:
+设置 [`python-version-file`](https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#using-the-python-version-file-input) 选项来使用项目中指定的版本：
 
 ```yaml title="example.yml" hl_lines="14 15 16 17"
 name: Example
@@ -125,8 +120,7 @@ jobs:
           python-version-file: ".python-version"
 ```
 
-Or, specify the `pyproject.toml` file to ignore the pin and use the latest version compatible with
-the project's `requires-python` constraint:
+或者，指定 `pyproject.toml` 文件来忽略固定版本，使用与项目的 `requires-python` 约束兼容的最新版本：
 
 ```yaml title="example.yml" hl_lines="17"
 name: Example
@@ -148,10 +142,9 @@ jobs:
           python-version-file: "pyproject.toml"
 ```
 
-## Syncing and running
+## 同步和运行
 
-Once uv and Python are installed, the project can be installed with `uv sync` and commands can be
-run in the environment with `uv run`:
+安装完 uv 和 Python 后，可以使用 `uv sync` 安装项目，并通过 `uv run` 在环境中运行命令：
 
 ```yaml title="example.yml" hl_lines="17-22"
 name: Example
@@ -174,22 +167,19 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run tests
-        # For example, using `pytest`
+        # 例如，使用 `pytest`
         run: uv run pytest tests
 ```
 
 !!! tip
 
-    The
-    [`UV_PROJECT_ENVIRONMENT` setting](../../concepts/projects/config.md#project-environment-path) can
-    be used to install to the system Python environment instead of creating a virtual environment.
+    [`UV_PROJECT_ENVIRONMENT` 设置](../../concepts/projects/config.md#project-environment-path) 可用于将安装路径设置为系统 Python 环境，而不是创建虚拟环境。
 
-## Caching
+## 缓存 {: #caching}
 
-It may improve CI times to store uv's cache across workflow runs.
+在 CI 流程中，持久化 uv 的缓存可能会提升工作流的执行速度。
 
-The [`astral-sh/setup-uv`](https://github.com/astral-sh/setup-uv) has built-in support for
-persisting the cache:
+[`astral-sh/setup-uv`](https://github.com/astral-sh/setup-uv) 操作内置支持缓存持久化：
 
 ```yaml title="example.yml"
 - name: Enable caching
@@ -198,7 +188,7 @@ persisting the cache:
     enable-cache: true
 ```
 
-You can configure the action to use a custom cache directory on the runner:
+您可以配置该操作使用自定义的缓存目录：
 
 ```yaml title="example.yml"
 - name: Define a custom uv cache path
@@ -208,7 +198,7 @@ You can configure the action to use a custom cache directory on the runner:
     cache-local-path: "/path/to/cache"
 ```
 
-Or invalidate it when the lockfile changes:
+或者，当锁文件（lockfile）发生变化时使缓存失效：
 
 ```yaml title="example.yml"
 - name: Define a cache dependency glob
@@ -218,7 +208,7 @@ Or invalidate it when the lockfile changes:
     cache-dependency-glob: "uv.lock"
 ```
 
-Or when any requirements file changes:
+或者，当任何要求文件发生变化时使缓存失效：
 
 ```yaml title="example.yml"
 - name: Define a cache dependency glob
@@ -228,20 +218,19 @@ Or when any requirements file changes:
     cache-dependency-glob: "requirements**.txt"
 ```
 
-Note that `astral-sh/setup-uv` will automatically use a separate cache key for each host
-architecture and platform.
+请注意，`astral-sh/setup-uv` 将自动为每个主机架构和平台使用不同的缓存键。
 
-Alternatively, you can manage the cache manually with the `actions/cache` action:
+另外，您也可以通过 `actions/cache` 操作手动管理缓存：
 
 ```yaml title="example.yml"
 jobs:
   install_job:
     env:
-      # Configure a constant location for the uv cache
+      # 配置 uv 缓存的常量位置
       UV_CACHE_DIR: /tmp/.uv-cache
 
     steps:
-      # ... setup up Python and uv ...
+      # ... 设置 Python 和 uv ...
 
       - name: Restore uv cache
         uses: actions/cache@v4
@@ -252,52 +241,45 @@ jobs:
             uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
             uv-${{ runner.os }}
 
-      # ... install packages, run tests, etc ...
+      # ... 安装包，运行测试等 ...
 
       - name: Minimize uv cache
         run: uv cache prune --ci
 ```
 
-The `uv cache prune --ci` command is used to reduce the size of the cache and is optimized for CI.
-Its effect on performance is dependent on the packages being installed.
+`uv cache prune --ci` 命令用于减小缓存的大小，并且针对 CI 环境进行了优化。其对性能的影响取决于所安装的包。
 
 !!! tip
 
-    If using `uv pip`, use `requirements.txt` instead of `uv.lock` in the cache key.
+    如果使用 `uv pip`，在缓存键中使用 `requirements.txt` 而非 `uv.lock`。
 
 !!! note
 
-    [post-job-hook]: https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/running-scripts-before-or-after-a-job
+    [post-job-hook](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/running-scripts-before-or-after-a-job)
 
-    When using non-ephemeral, self-hosted runners the default cache directory can grow unbounded.
-    In this case, it may not be optimal to share the cache between jobs. Instead, move the cache
-    inside the GitHub Workspace and remove it once the job finishes using a
-    [Post Job Hook][post-job-hook].
+    在使用非临时的自托管运行器时，默认缓存目录可能会无限增长。在这种情况下，可能不适合在作业之间共享缓存。可以将缓存移到 GitHub 工作区内，并在作业结束后通过 [Post Job Hook](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/running-scripts-before-or-after-a-job) 来删除缓存。
 
     ```yaml
     install_job:
       env:
-        # Configure a relative location for the uv cache
+        # 配置 uv 缓存的相对位置
         UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
     ```
 
-    Using a post job hook requires setting the `ACTIONS_RUNNER_HOOK_JOB_STARTED` environment
-    variable on the self-hosted runner to the path of a cleanup script such as the one shown below.
+    使用 post job hook 时，需要在自托管运行器上设置环境变量 `ACTIONS_RUNNER_HOOK_JOB_STARTED`，并指向一个清理脚本的路径，如下所示：
 
     ```sh title="clean-uv-cache.sh"
     #!/usr/bin/env sh
     uv cache clean
     ```
 
-## Using `uv pip`
+## 使用 `uv pip`
 
-If using the `uv pip` interface instead of the uv project interface, uv requires a virtual
-environment by default. To allow installing packages into the system environment, use the `--system`
-flag on all `uv` invocations or set the `UV_SYSTEM_PYTHON` variable.
+如果使用 `uv pip` 接口而不是 uv 项目接口，默认情况下，uv 需要使用虚拟环境。若要允许将包安装到系统环境中，请在所有 `uv` 调用中使用 `--system` 标志，或设置 `UV_SYSTEM_PYTHON` 变量。
 
-The `UV_SYSTEM_PYTHON` variable can be defined in at different scopes.
+`UV_SYSTEM_PYTHON` 变量可以在不同的作用域中定义。
 
-Opt-in for the entire workflow by defining it at the top level:
+要为整个工作流启用，请在顶层定义：
 
 ```yaml title="example.yml"
 env:
@@ -306,7 +288,7 @@ env:
 jobs: ...
 ```
 
-Or, opt-in for a specific job in the workflow:
+或为工作流中的特定作业启用：
 
 ```yaml title="example.yml"
 jobs:
@@ -316,7 +298,7 @@ jobs:
     ...
 ```
 
-Or, opt-in for a specific step in a job:
+或为作业中的特定步骤启用：
 
 ```yaml title="example.yml"
 steps:
@@ -326,4 +308,4 @@ steps:
       UV_SYSTEM_PYTHON: 1
 ```
 
-To opt-out again, the `--no-system` flag can be used in any uv invocation.
+如果希望再次禁用，可以在任何 `uv` 调用中使用 `--no-system` 标志。
