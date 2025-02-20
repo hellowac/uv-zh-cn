@@ -1,13 +1,16 @@
+use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
 use std::ops::{Bound, Deref};
 use std::str::FromStr;
 
+use arcstr::ArcStr;
 use itertools::Itertools;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use version_ranges::Ranges;
+
 use uv_normalize::ExtraName;
 use uv_pep440::{Version, VersionParseError, VersionSpecifier};
-use version_ranges::Ranges;
 
 use super::algebra::{Edges, NodeId, Variable, INTERNER};
 use super::simplify;
@@ -52,7 +55,7 @@ pub enum MarkerValueVersion {
 }
 
 impl Display for MarkerValueVersion {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::ImplementationVersion => f.write_str("implementation_version"),
             Self::PythonFullVersion => f.write_str("python_full_version"),
@@ -96,7 +99,7 @@ pub enum MarkerValueString {
 
 impl Display for MarkerValueString {
     /// Normalizes deprecated names to the proper ones
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::ImplementationName => f.write_str("implementation_name"),
             Self::OsName | Self::OsNameDeprecated => f.write_str("os_name"),
@@ -128,7 +131,7 @@ pub enum MarkerValue {
     /// `extra`. This one is special because it's a list and not env but user given
     Extra,
     /// Not a constant, but a user given quoted string with a value inside such as '3.8' or "windows"
-    QuotedString(String),
+    QuotedString(ArcStr),
 }
 
 impl FromStr for MarkerValue {
@@ -174,7 +177,7 @@ impl FromStr for MarkerValue {
 }
 
 impl Display for MarkerValue {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::MarkerEnvVersion(marker_value_version) => marker_value_version.fmt(f),
             Self::MarkerEnvString(marker_value_string) => marker_value_string.fmt(f),
@@ -271,8 +274,8 @@ impl MarkerOperator {
 
     /// Returns the marker operator and value whose union represents the given range.
     pub fn from_bounds(
-        bounds: (&Bound<String>, &Bound<String>),
-    ) -> impl Iterator<Item = (MarkerOperator, String)> {
+        bounds: (&Bound<ArcStr>, &Bound<ArcStr>),
+    ) -> impl Iterator<Item = (MarkerOperator, ArcStr)> {
         let (b1, b2) = match bounds {
             (Bound::Included(v1), Bound::Included(v2)) if v1 == v2 => {
                 (Some((MarkerOperator::Equal, v1.clone())), None)
@@ -290,7 +293,7 @@ impl MarkerOperator {
     }
 
     /// Returns a value specifier representing the given lower bound.
-    pub fn from_lower_bound(bound: &Bound<String>) -> Option<(MarkerOperator, String)> {
+    pub fn from_lower_bound(bound: &Bound<ArcStr>) -> Option<(MarkerOperator, ArcStr)> {
         match bound {
             Bound::Included(value) => Some((MarkerOperator::GreaterEqual, value.clone())),
             Bound::Excluded(value) => Some((MarkerOperator::GreaterThan, value.clone())),
@@ -299,7 +302,7 @@ impl MarkerOperator {
     }
 
     /// Returns a value specifier representing the given upper bound.
-    pub fn from_upper_bound(bound: &Bound<String>) -> Option<(MarkerOperator, String)> {
+    pub fn from_upper_bound(bound: &Bound<ArcStr>) -> Option<(MarkerOperator, ArcStr)> {
         match bound {
             Bound::Included(value) => Some((MarkerOperator::LessEqual, value.clone())),
             Bound::Excluded(value) => Some((MarkerOperator::LessThan, value.clone())),
@@ -340,7 +343,7 @@ impl FromStr for MarkerOperator {
 }
 
 impl Display for MarkerOperator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Equal => "==",
             Self::NotEqual => "!=",
@@ -385,7 +388,7 @@ impl FromStr for StringVersion {
 }
 
 impl Display for StringVersion {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.string.fmt(f)
     }
 }
@@ -445,7 +448,7 @@ impl MarkerValueExtra {
 }
 
 impl Display for MarkerValueExtra {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Extra(extra) => extra.fmt(f),
             Self::Arbitrary(string) => string.fmt(f),
@@ -484,13 +487,26 @@ pub enum MarkerExpression {
     String {
         key: MarkerValueString,
         operator: MarkerOperator,
-        value: String,
+        value: ArcStr,
     },
     /// `extra <extra op> '...'` or `'...' <extra op> extra`.
     Extra {
         operator: ExtraOperator,
         name: MarkerValueExtra,
     },
+}
+
+/// The kind of a [`MarkerExpression`].
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+pub(crate) enum MarkerExpressionKind {
+    /// A version expression, e.g. `<version key> <version op> <quoted PEP 440 version>`.
+    Version(MarkerValueVersion),
+    /// A version "in" expression, e.g. `<version key> in <quoted list of PEP 440 versions>`.
+    VersionIn(MarkerValueVersion),
+    /// A string marker comparison, e.g. `sys_platform == '...'`.
+    String(MarkerValueString),
+    /// An extra expression, e.g. `extra == '...'`.
+    Extra,
 }
 
 /// The operator for an extra expression, either '==' or '!='.
@@ -524,7 +540,7 @@ impl ExtraOperator {
 }
 
 impl Display for ExtraOperator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Equal => "==",
             Self::NotEqual => "!=",
@@ -563,10 +579,20 @@ impl MarkerExpression {
     pub fn from_str(s: &str) -> Result<Option<Self>, Pep508Error> {
         MarkerExpression::parse_reporter(s, &mut TracingReporter)
     }
+
+    /// Return the kind of this marker expression.
+    pub(crate) fn kind(&self) -> MarkerExpressionKind {
+        match self {
+            MarkerExpression::Version { key, .. } => MarkerExpressionKind::Version(*key),
+            MarkerExpression::VersionIn { key, .. } => MarkerExpressionKind::VersionIn(*key),
+            MarkerExpression::String { key, .. } => MarkerExpressionKind::String(*key),
+            MarkerExpression::Extra { .. } => MarkerExpressionKind::Extra,
+        }
+    }
 }
 
 impl Display for MarkerExpression {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             MarkerExpression::Version { key, specifier } => {
                 let (op, version) = (specifier.operator(), specifier.version());
@@ -611,8 +637,7 @@ impl Display for MarkerExpression {
 /// Marker trees are canonical, meaning any two functionally equivalent markers
 /// will compare equally. Markers also support efficient polynomial-time operations,
 /// such as conjunction and disjunction.
-// TODO(ibraheem): decide whether we want to implement `Copy` for marker trees
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct MarkerTree(NodeId);
 
 impl Default for MarkerTree {
@@ -670,7 +695,7 @@ impl MarkerTree {
     /// evaluate to `true` in any environment. However, this method may return false
     /// negatives, i.e. it may not be able to detect that a marker is always true for
     /// complex expressions.
-    pub fn is_true(&self) -> bool {
+    pub fn is_true(self) -> bool {
         self.0.is_true()
     }
 
@@ -681,24 +706,22 @@ impl MarkerTree {
     /// evaluate to `false` in any environment. However, this method may return false
     /// negatives, i.e. it may not be able to detect that a marker is unsatisfiable
     /// for complex expressions.
-    pub fn is_false(&self) -> bool {
+    pub fn is_false(self) -> bool {
         self.0.is_false()
     }
 
     /// Returns a new marker tree that is the negation of this one.
     #[must_use]
-    pub fn negate(&self) -> MarkerTree {
+    pub fn negate(self) -> MarkerTree {
         MarkerTree(self.0.not())
     }
 
     /// Combine this marker tree with the one given via a conjunction.
-    #[allow(clippy::needless_pass_by_value)]
     pub fn and(&mut self, tree: MarkerTree) {
         self.0 = INTERNER.lock().and(self.0, tree.0);
     }
 
     /// Combine this marker tree with the one given via a disjunction.
-    #[allow(clippy::needless_pass_by_value)]
     pub fn or(&mut self, tree: MarkerTree) {
         self.0 = INTERNER.lock().or(self.0, tree.0);
     }
@@ -708,7 +731,6 @@ impl MarkerTree {
     ///
     /// If the marker set is always `true`, then it can be said that `self`
     /// implies `consequent`.
-    #[allow(clippy::needless_pass_by_value)]
     pub fn implies(&mut self, consequent: MarkerTree) {
         // This could probably be optimized, but is clearly
         // correct, since logical implication is `-P or Q`.
@@ -723,7 +745,7 @@ impl MarkerTree {
     /// never both evaluate to `true` in a given environment. However, this method may return
     /// false negatives, i.e. it may not be able to detect that two markers are disjoint for
     /// complex expressions.
-    pub fn is_disjoint(&self, other: &MarkerTree) -> bool {
+    pub fn is_disjoint(self, other: MarkerTree) -> bool {
         INTERNER.lock().is_disjoint(self.0, other.0)
     }
 
@@ -733,12 +755,12 @@ impl MarkerTree {
     /// If the marker is `false`, the marker is represented as the normalized expression, `python_version < '0'`.
     ///
     /// The returned type implements [`Display`] and [`serde::Serialize`].
-    pub fn contents(&self) -> Option<MarkerTreeContents> {
+    pub fn contents(self) -> Option<MarkerTreeContents> {
         if self.is_true() {
             return None;
         }
 
-        Some(MarkerTreeContents(self.clone()))
+        Some(MarkerTreeContents(self))
     }
 
     /// Returns a simplified string representation of this marker, if it contains at least one
@@ -746,12 +768,12 @@ impl MarkerTree {
     ///
     /// If the marker is `true`, this method will return `None`.
     /// If the marker is `false`, the marker is represented as the normalized expression, `python_version < '0'`.
-    pub fn try_to_string(&self) -> Option<String> {
+    pub fn try_to_string(self) -> Option<String> {
         self.contents().map(|contents| contents.to_string())
     }
 
     /// Returns the underlying [`MarkerTreeKind`] of the root node.
-    pub fn kind(&self) -> MarkerTreeKind<'_> {
+    pub fn kind(self) -> MarkerTreeKind<'static> {
         if self.is_true() {
             return MarkerTreeKind::True;
         }
@@ -818,12 +840,12 @@ impl MarkerTree {
     }
 
     /// Returns a simplified DNF expression for this marker tree.
-    pub fn to_dnf(&self) -> Vec<Vec<MarkerExpression>> {
+    pub fn to_dnf(self) -> Vec<Vec<MarkerExpression>> {
         simplify::to_dnf(self)
     }
 
     /// Does this marker apply in the given environment?
-    pub fn evaluate(&self, env: &MarkerEnvironment, extras: &[ExtraName]) -> bool {
+    pub fn evaluate(self, env: &MarkerEnvironment, extras: &[ExtraName]) -> bool {
         self.evaluate_reporter_impl(env, extras, &mut TracingReporter)
     }
 
@@ -835,7 +857,7 @@ impl MarkerTree {
     /// independent marker evaluation. In practice, this means only the extras
     /// are evaluated when an environment is not provided.
     pub fn evaluate_optional_environment(
-        &self,
+        self,
         env: Option<&MarkerEnvironment>,
         extras: &[ExtraName],
     ) -> bool {
@@ -848,7 +870,7 @@ impl MarkerTree {
     /// Same as [`Self::evaluate`], but instead of using logging to warn, you can pass your own
     /// handler for warnings
     pub fn evaluate_reporter(
-        &self,
+        self,
         env: &MarkerEnvironment,
         extras: &[ExtraName],
         reporter: &mut impl Reporter,
@@ -857,7 +879,7 @@ impl MarkerTree {
     }
 
     fn evaluate_reporter_impl(
-        &self,
+        self,
         env: &MarkerEnvironment,
         extras: &[ExtraName],
         reporter: &mut impl Reporter,
@@ -894,8 +916,6 @@ impl MarkerTree {
                         }
                     }
 
-                    // todo(ibraheem): avoid cloning here, `contains` should accept `&impl Borrow<V>`
-                    let l_string = &l_string.to_string();
                     if range.contains(l_string) {
                         return tree.evaluate_reporter_impl(env, extras, reporter);
                     }
@@ -924,7 +944,7 @@ impl MarkerTree {
     /// Checks if the requirement should be activated with the given set of active extras without evaluating
     /// the remaining environment markers, i.e. if there is potentially an environment that could activate this
     /// requirement.
-    pub fn evaluate_extras(&self, extras: &[ExtraName]) -> bool {
+    pub fn evaluate_extras(self, extras: &[ExtraName]) -> bool {
         match self.kind() {
             MarkerTreeKind::True => true,
             MarkerTreeKind::False => false,
@@ -950,7 +970,7 @@ impl MarkerTree {
     ///
     /// ASSUMPTION: There is one `extra = "..."`, and it's either the only marker or part of the
     /// main conjunction.
-    pub fn top_level_extra(&self) -> Option<MarkerExpression> {
+    pub fn top_level_extra(self) -> Option<MarkerExpression> {
         let mut extra_expression = None;
         for conjunction in self.to_dnf() {
             let found = conjunction.iter().find(|expression| {
@@ -983,11 +1003,19 @@ impl MarkerTree {
     ///
     /// ASSUMPTION: There is one `extra = "..."`, and it's either the only marker or part of the
     /// main conjunction.
-    pub fn top_level_extra_name(&self) -> Option<ExtraName> {
+    pub fn top_level_extra_name(self) -> Option<Cow<'static, ExtraName>> {
+        // Fast path: The marker is only a `extra == "..."`.
+        if let MarkerTreeKind::Extra(marker) = self.kind() {
+            if marker.edge(true).is_true() {
+                let CanonicalMarkerValueExtra::Extra(extra) = marker.name;
+                return Some(Cow::Borrowed(extra));
+            }
+        }
+
         let extra_expression = self.top_level_extra()?;
 
         match extra_expression {
-            MarkerExpression::Extra { name, .. } => name.into_extra(),
+            MarkerExpression::Extra { name, .. } => name.into_extra().map(Cow::Owned),
             _ => unreachable!(),
         }
     }
@@ -1017,7 +1045,6 @@ impl MarkerTree {
     /// results of that simplification. (If `requires-python` changes, then one
     /// should reconstitute all relevant markers from the source data.)
     #[must_use]
-    #[allow(clippy::needless_pass_by_value)]
     pub fn simplify_python_versions(
         self,
         lower: Bound<&Version>,
@@ -1038,7 +1065,6 @@ impl MarkerTree {
     /// `python_full_version <= '3.10'`, this would result in a marker of
     /// `python_full_version >= '3.8' and python_full_version <= '3.10'`.
     #[must_use]
-    #[allow(clippy::needless_pass_by_value)]
     pub fn complexify_python_versions(
         self,
         lower: Bound<&Version>,
@@ -1064,6 +1090,21 @@ impl MarkerTree {
         self.simplify_extras_with(|name| extras.contains(name))
     }
 
+    /// Remove negated extras from a marker, returning `None` if the marker
+    /// tree evaluates to `true`.
+    ///
+    /// Any negated `extra` markers that are always `true` given the provided
+    /// extras will be removed. Any `extra` markers that are always `false`
+    /// given the provided extras will be left unchanged.
+    ///
+    /// For example, if `dev` is a provided extra, given `sys_platform
+    /// == 'linux' and extra != 'dev'`, the marker will be simplified to
+    /// `sys_platform == 'linux'`.
+    #[must_use]
+    pub fn simplify_not_extras(self, extras: &[ExtraName]) -> MarkerTree {
+        self.simplify_not_extras_with(|name| extras.contains(name))
+    }
+
     /// Remove the extras from a marker, returning `None` if the marker tree evaluates to `true`.
     ///
     /// Any `extra` markers that are always `true` given the provided predicate will be removed.
@@ -1083,9 +1124,97 @@ impl MarkerTree {
         self.simplify_extras_with_impl(&is_extra)
     }
 
+    /// Remove negated extras from a marker, returning `None` if the marker tree evaluates to
+    /// `true`.
+    ///
+    /// Any negated `extra` markers that are always `true` given the provided
+    /// predicate will be removed. Any `extra` markers that are always `false`
+    /// given the provided predicate will be left unchanged.
+    ///
+    /// For example, if `is_extra('dev')` is true, given
+    /// `sys_platform == 'linux' and extra != 'dev'`, the marker will be simplified to
+    /// `sys_platform == 'linux'`.
+    #[must_use]
+    pub fn simplify_not_extras_with(self, is_extra: impl Fn(&ExtraName) -> bool) -> MarkerTree {
+        // Because `simplify_extras_with_impl` is recursive, and we need to use
+        // our predicate in recursive calls, we need the predicate itself to
+        // have some indirection (or else we'd have to clone it). To avoid a
+        // recursive type at codegen time, we just introduce the indirection
+        // here, but keep the calling API ergonomic.
+        self.simplify_not_extras_with_impl(&is_extra)
+    }
+
+    /// Returns a new `MarkerTree` where all `extra` expressions are removed.
+    ///
+    /// If the marker only consisted of `extra` expressions, then a marker that
+    /// is always true is returned.
+    #[must_use]
+    pub fn without_extras(self) -> MarkerTree {
+        MarkerTree(INTERNER.lock().without_extras(self.0))
+    }
+
+    /// Returns a new `MarkerTree` where only `extra` expressions are removed.
+    ///
+    /// If the marker did not contain any `extra` expressions, then a marker
+    /// that is always true is returned.
+    #[must_use]
+    pub fn only_extras(self) -> MarkerTree {
+        MarkerTree(INTERNER.lock().only_extras(self.0))
+    }
+
+    /// Calls the provided function on every `extra` in this tree.
+    ///
+    /// The operator provided to the function is guaranteed to be
+    /// `MarkerOperator::Equal` or `MarkerOperator::NotEqual`.
+    pub fn visit_extras(self, mut f: impl FnMut(MarkerOperator, &ExtraName)) {
+        fn imp(tree: MarkerTree, f: &mut impl FnMut(MarkerOperator, &ExtraName)) {
+            match tree.kind() {
+                MarkerTreeKind::True | MarkerTreeKind::False => {}
+                MarkerTreeKind::Version(kind) => {
+                    for (tree, _) in simplify::collect_edges(kind.edges()) {
+                        imp(tree, f);
+                    }
+                }
+                MarkerTreeKind::String(kind) => {
+                    for (tree, _) in simplify::collect_edges(kind.children()) {
+                        imp(tree, f);
+                    }
+                }
+                MarkerTreeKind::In(kind) => {
+                    for (_, tree) in kind.children() {
+                        imp(tree, f);
+                    }
+                }
+                MarkerTreeKind::Contains(kind) => {
+                    for (_, tree) in kind.children() {
+                        imp(tree, f);
+                    }
+                }
+                MarkerTreeKind::Extra(kind) => {
+                    if kind.low.is_false() {
+                        f(MarkerOperator::Equal, kind.name().extra());
+                    } else {
+                        f(MarkerOperator::NotEqual, kind.name().extra());
+                    }
+                    for (_, tree) in kind.children() {
+                        imp(tree, f);
+                    }
+                }
+            }
+        }
+        imp(self, &mut f);
+    }
+
     fn simplify_extras_with_impl(self, is_extra: &impl Fn(&ExtraName) -> bool) -> MarkerTree {
         MarkerTree(INTERNER.lock().restrict(self.0, &|var| match var {
             Variable::Extra(name) => is_extra(name.extra()).then_some(true),
+            _ => None,
+        }))
+    }
+
+    fn simplify_not_extras_with_impl(self, is_extra: &impl Fn(&ExtraName) -> bool) -> MarkerTree {
+        MarkerTree(INTERNER.lock().restrict(self.0, &|var| match var {
+            Variable::Extra(name) => is_extra(name.extra()).then_some(false),
             _ => None,
         }))
     }
@@ -1122,7 +1251,7 @@ impl MarkerTree {
         MarkerTreeDebugRaw { marker: self }
     }
 
-    fn fmt_graph(&self, f: &mut fmt::Formatter<'_>, level: usize) -> fmt::Result {
+    fn fmt_graph(self, f: &mut Formatter<'_>, level: usize) -> fmt::Result {
         match self.kind() {
             MarkerTreeKind::True => return write!(f, "true"),
             MarkerTreeKind::False => return write!(f, "false"),
@@ -1219,8 +1348,8 @@ pub struct MarkerTreeDebugGraph<'a> {
     marker: &'a MarkerTree,
 }
 
-impl<'a> fmt::Debug for MarkerTreeDebugGraph<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Debug for MarkerTreeDebugGraph<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.marker.fmt_graph(f, 0)
     }
 }
@@ -1236,8 +1365,8 @@ pub struct MarkerTreeDebugRaw<'a> {
     marker: &'a MarkerTree,
 }
 
-impl<'a> fmt::Debug for MarkerTreeDebugRaw<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Debug for MarkerTreeDebugRaw<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let node = INTERNER.shared.node(self.marker.0);
         f.debug_tuple("MarkerTreeDebugRaw").field(node).finish()
     }
@@ -1307,7 +1436,7 @@ impl Ord for VersionMarkerTree<'_> {
 pub struct StringMarkerTree<'a> {
     id: NodeId,
     key: CanonicalMarkerValueString,
-    map: &'a [(Ranges<String>, NodeId)],
+    map: &'a [(Ranges<ArcStr>, NodeId)],
 }
 
 impl StringMarkerTree<'_> {
@@ -1317,7 +1446,7 @@ impl StringMarkerTree<'_> {
     }
 
     /// The edges of this node, corresponding to possible output ranges of the given variable.
-    pub fn children(&self) -> impl ExactSizeIterator<Item = (&Ranges<String>, MarkerTree)> {
+    pub fn children(&self) -> impl ExactSizeIterator<Item = (&Ranges<ArcStr>, MarkerTree)> {
         self.map
             .iter()
             .map(|(range, node)| (range, MarkerTree(node.negate(self.id))))
@@ -1342,7 +1471,7 @@ impl Ord for StringMarkerTree<'_> {
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct InMarkerTree<'a> {
     key: CanonicalMarkerValueString,
-    value: &'a str,
+    value: &'a ArcStr,
     high: NodeId,
     low: NodeId,
 }
@@ -1354,7 +1483,7 @@ impl InMarkerTree<'_> {
     }
 
     /// The value (RHS) for this expression.
-    pub fn value(&self) -> &str {
+    pub fn value(&self) -> &ArcStr {
         self.value
     }
 
@@ -1578,6 +1707,7 @@ mod test {
     use std::str::FromStr;
 
     use insta::assert_snapshot;
+
     use uv_normalize::ExtraName;
     use uv_pep440::Version;
 
@@ -1965,7 +2095,7 @@ mod test {
             MarkerExpression::String {
                 key: MarkerValueString::OsName,
                 operator: MarkerOperator::Equal,
-                value: "nt".to_string(),
+                value: arcstr::literal!("nt")
             }
         );
     }
@@ -2044,9 +2174,7 @@ mod test {
 
         // Given `os_name == "nt" and extra == "test"`, don't simplify.
         let markers = MarkerTree::from_str(r#"os_name == "nt" and extra == "test""#).unwrap();
-        let simplified = markers
-            .clone()
-            .simplify_extras(&[ExtraName::from_str("dev").unwrap()]);
+        let simplified = markers.simplify_extras(&[ExtraName::from_str("dev").unwrap()]);
         assert_eq!(simplified, markers);
 
         // Given `os_name == "nt" and (python_version == "3.7" or extra == "dev")`, simplify to
@@ -2066,6 +2194,57 @@ mod test {
         )
         .unwrap();
         let simplified = markers.simplify_extras(&[ExtraName::from_str("dev").unwrap()]);
+        let expected =
+            MarkerTree::from_str(r#"os_name == "nt" or python_version == "3.7""#).unwrap();
+        assert_eq!(simplified, expected);
+    }
+
+    #[test]
+    fn test_simplify_not_extras() {
+        // Given `os_name == "nt" and extra != "dev"`, simplify to `os_name == "nt"`.
+        let markers = MarkerTree::from_str(r#"os_name == "nt" and extra != "dev""#).unwrap();
+        let simplified = markers.simplify_not_extras(&[ExtraName::from_str("dev").unwrap()]);
+        let expected = MarkerTree::from_str(r#"os_name == "nt""#).unwrap();
+        assert_eq!(simplified, expected);
+
+        // Given `os_name == "nt" or extra != "dev"`, remove the marker entirely.
+        let markers = MarkerTree::from_str(r#"os_name == "nt" or extra != "dev""#).unwrap();
+        let simplified = markers.simplify_not_extras(&[ExtraName::from_str("dev").unwrap()]);
+        assert_eq!(simplified, MarkerTree::TRUE);
+
+        // Given `extra != "dev"`, remove the marker entirely.
+        let markers = MarkerTree::from_str(r#"extra != "dev""#).unwrap();
+        let simplified = markers.simplify_not_extras(&[ExtraName::from_str("dev").unwrap()]);
+        assert_eq!(simplified, MarkerTree::TRUE);
+
+        // Given `extra != "dev" and extra != "test"`, simplify to `extra != "test"`.
+        let markers = MarkerTree::from_str(r#"extra != "dev" and extra != "test""#).unwrap();
+        let simplified = markers.simplify_not_extras(&[ExtraName::from_str("dev").unwrap()]);
+        let expected = MarkerTree::from_str(r#"extra != "test""#).unwrap();
+        assert_eq!(simplified, expected);
+
+        // Given `os_name == "nt" and extra != "test"`, don't simplify.
+        let markers = MarkerTree::from_str(r#"os_name != "nt" and extra != "test""#).unwrap();
+        let simplified = markers.simplify_not_extras(&[ExtraName::from_str("dev").unwrap()]);
+        assert_eq!(simplified, markers);
+
+        // Given `os_name == "nt" and (python_version == "3.7" or extra != "dev")`, simplify to
+        // `os_name == "nt".
+        let markers = MarkerTree::from_str(
+            r#"os_name == "nt" and (python_version == "3.7" or extra != "dev")"#,
+        )
+        .unwrap();
+        let simplified = markers.simplify_not_extras(&[ExtraName::from_str("dev").unwrap()]);
+        let expected = MarkerTree::from_str(r#"os_name == "nt""#).unwrap();
+        assert_eq!(simplified, expected);
+
+        // Given `os_name == "nt" or (python_version == "3.7" and extra != "dev")`, simplify to
+        // `os_name == "nt" or python_version == "3.7"`.
+        let markers = MarkerTree::from_str(
+            r#"os_name == "nt" or (python_version == "3.7" and extra != "dev")"#,
+        )
+        .unwrap();
+        let simplified = markers.simplify_not_extras(&[ExtraName::from_str("dev").unwrap()]);
         let expected =
             MarkerTree::from_str(r#"os_name == "nt" or python_version == "3.7""#).unwrap();
         assert_eq!(simplified, expected);
@@ -2247,7 +2426,7 @@ mod test {
 
         assert_simplifies(
             "((extra == 'a' or extra == 'b') and extra == 'c') or extra == 'b'",
-            "(extra == 'a' and extra == 'c') or extra == 'b'",
+            "extra == 'b' or (extra == 'a' and extra == 'c')",
         );
 
         // post-normalization filtering
@@ -2469,13 +2648,13 @@ mod test {
                 or (implementation_name != 'pypy' and sys_platform == 'win32')
                 or (sys_platform == 'win32' and os_name != 'nt')
                 or (sys_platform != 'win32' and os_name == 'nt')",
-            "(os_name != 'nt' and sys_platform == 'win32') \
-                or (implementation_name != 'pypy' and os_name == 'nt') \
-                or (implementation_name == 'pypy' and os_name != 'nt') \
+            "(implementation_name == 'pypy' and sys_platform != 'win32') \
+                or (implementation_name != 'pypy' and sys_platform == 'win32') \
+                or (os_name != 'nt' and sys_platform == 'win32') \
                 or (os_name == 'nt' and sys_platform != 'win32')",
         );
 
-        // This is another case we cannot simplify fully, depending on the variable order.
+        // This is a case we can simplify fully, but it's dependent on the variable order.
         // The expression is equivalent to `sys_platform == 'x' or (os_name == 'Linux' and platform_system == 'win32')`.
         assert_simplifies(
             "(os_name == 'Linux' and platform_system == 'win32')
@@ -2484,14 +2663,14 @@ mod test {
                 or (os_name != 'Linux' and platform_system == 'win32' and sys_platform == 'x')
                 or (os_name == 'Linux' and platform_system != 'win32' and sys_platform == 'x')
                 or (os_name != 'Linux' and platform_system != 'win32' and sys_platform == 'x')",
-            "(os_name != 'Linux' and sys_platform == 'x') or (platform_system != 'win32' and sys_platform == 'x') or (os_name == 'Linux' and platform_system == 'win32')",
+            "(os_name == 'Linux' and platform_system == 'win32') or sys_platform == 'x'",
         );
 
         assert_simplifies("python_version > '3.7'", "python_full_version >= '3.8'");
 
         assert_simplifies(
             "(python_version <= '3.7' and os_name == 'Linux') or python_version > '3.7'",
-            "os_name == 'Linux' or python_full_version >= '3.8'",
+            "python_full_version >= '3.8' or os_name == 'Linux'",
         );
 
         // Again, the extra `<3.7` and `>=3.9` expressions cannot be seen as redundant due to them being interdependent.
@@ -2500,34 +2679,31 @@ mod test {
             "(os_name == 'Linux' and sys_platform == 'win32') \
                 or (os_name != 'Linux' and sys_platform == 'win32' and python_version == '3.7') \
                 or (os_name != 'Linux' and sys_platform == 'win32' and python_version == '3.8')",
-            "(python_full_version < '3.7' and os_name == 'Linux' and sys_platform == 'win32') \
-                or (python_full_version >= '3.9' and os_name == 'Linux' and sys_platform == 'win32') \
-                or (python_full_version >= '3.7' and python_full_version < '3.9' and sys_platform == 'win32')",
+            "(python_full_version >= '3.7' and python_full_version < '3.9' and sys_platform == 'win32') or (os_name == 'Linux' and sys_platform == 'win32')",
         );
 
         assert_simplifies(
             "(implementation_name != 'pypy' and os_name == 'nt' and sys_platform == 'darwin') or (os_name == 'nt' and sys_platform == 'win32')",
-            "(implementation_name != 'pypy' and os_name == 'nt' and sys_platform == 'darwin') or (os_name == 'nt' and sys_platform == 'win32')",
+            "os_name == 'nt' and sys_platform == 'win32'",
         );
 
         assert_simplifies(
-            "(sys_platform == 'darwin' or sys_platform == 'win32')
-                and ((implementation_name != 'pypy' and os_name == 'nt' and sys_platform == 'darwin') or (os_name == 'nt' and sys_platform == 'win32'))",
-            "(implementation_name != 'pypy' and os_name == 'nt' and sys_platform == 'darwin') or (os_name == 'nt' and sys_platform == 'win32')",
+            "(sys_platform == 'darwin' or sys_platform == 'win32') and ((implementation_name != 'pypy' and os_name == 'nt' and sys_platform == 'darwin') or (os_name == 'nt' and sys_platform == 'win32'))",
+            "os_name == 'nt' and sys_platform == 'win32'",
         );
 
         assert_simplifies(
             "(sys_platform == 'darwin' or sys_platform == 'win32')
                 and ((platform_version != '1' and os_name == 'nt' and sys_platform == 'darwin') or (os_name == 'nt' and sys_platform == 'win32'))",
-            "(os_name == 'nt' and platform_version != '1' and sys_platform == 'darwin') or (os_name == 'nt' and sys_platform == 'win32')",
+            "os_name == 'nt' and sys_platform == 'win32'",
         );
 
         assert_simplifies(
             "(os_name == 'nt' and sys_platform == 'win32') \
                 or (os_name != 'nt' and platform_version == '1' and (sys_platform == 'win32' or sys_platform == 'win64'))",
-            "(platform_version == '1' and sys_platform == 'win32') \
-                or (os_name != 'nt' and platform_version == '1' and sys_platform == 'win64') \
-                or (os_name == 'nt' and sys_platform == 'win32')",
+            "(os_name != 'nt' and platform_version == '1' and sys_platform == 'win64') \
+                or (os_name == 'nt' and sys_platform == 'win32') \
+                or (platform_version == '1' and sys_platform == 'win32')",
         );
 
         assert_simplifies(
@@ -2703,8 +2879,8 @@ mod test {
     fn is_disjoint_commutative() {
         let m1 = m("extra == 'Linux' and extra != 'OSX'");
         let m2 = m("extra == 'Linux'");
-        assert!(!m2.is_disjoint(&m1));
-        assert!(!m1.is_disjoint(&m2));
+        assert!(!m2.is_disjoint(m1));
+        assert!(!m1.is_disjoint(m2));
     }
 
     #[test]
@@ -2766,7 +2942,7 @@ mod test {
     fn test_is_false() {
         assert!(m("python_version < '3.10' and python_version >= '3.10'").is_false());
         assert!(m("(python_version < '3.10' and python_version >= '3.10') \
-              or (python_version < '3.9' and python_version >= '3.9')",)
+              or (python_version < '3.9' and python_version >= '3.9')")
         .is_false());
 
         assert!(!m("python_version < '3.10'").is_false());
@@ -2836,7 +3012,7 @@ mod test {
 
     fn is_disjoint(left: impl AsRef<str>, right: impl AsRef<str>) -> bool {
         let (left, right) = (m(left.as_ref()), m(right.as_ref()));
-        left.is_disjoint(&right) && right.is_disjoint(&left)
+        left.is_disjoint(right) && right.is_disjoint(left)
     }
 
     fn implies(antecedent: &str, consequent: &str) -> bool {
@@ -3009,6 +3185,119 @@ mod test {
                  and (sys_platform == 'win32' or python_full_version >= '3.8')",
             ),
             m("python_full_version >= '3.9'"),
+        );
+    }
+
+    #[test]
+    fn without_extras() {
+        assert_eq!(
+            m("os_name == 'Linux'").without_extras(),
+            m("os_name == 'Linux'"),
+        );
+        assert!(m("extra == 'foo'").without_extras().is_true());
+        assert_eq!(
+            m("os_name == 'Linux' and extra == 'foo'").without_extras(),
+            m("os_name == 'Linux'"),
+        );
+
+        assert!(m("
+                (os_name == 'Linux' and extra == 'foo')
+                or (os_name != 'Linux' and extra == 'bar')")
+        .without_extras()
+        .is_true());
+
+        assert_eq!(
+            m("os_name == 'Linux' and extra != 'foo'").without_extras(),
+            m("os_name == 'Linux'"),
+        );
+
+        assert!(
+            m("extra != 'extra-project-bar' and extra == 'extra-project-foo'")
+                .without_extras()
+                .is_true()
+        );
+
+        assert_eq!(
+            m("(os_name == 'Darwin' and extra == 'foo') \
+               or (sys_platform == 'Linux' and extra != 'foo')")
+            .without_extras(),
+            m("os_name == 'Darwin' or sys_platform == 'Linux'"),
+        );
+    }
+
+    #[test]
+    fn only_extras() {
+        assert!(m("os_name == 'Linux'").only_extras().is_true());
+        assert_eq!(m("extra == 'foo'").only_extras(), m("extra == 'foo'"));
+        assert_eq!(
+            m("os_name == 'Linux' and extra == 'foo'").only_extras(),
+            m("extra == 'foo'"),
+        );
+        assert!(m("
+                (os_name == 'foo' and extra == 'foo')
+                or (os_name == 'bar' and extra != 'foo')")
+        .only_extras()
+        .is_true());
+        assert_eq!(
+            m("
+                (os_name == 'Linux' and extra == 'foo')
+                or (os_name != 'Linux' and extra == 'bar')")
+            .only_extras(),
+            m("extra == 'foo' or extra == 'bar'"),
+        );
+
+        assert_eq!(
+            m("
+                (implementation_name != 'pypy' and os_name == 'nt' and sys_platform == 'darwin')
+                or (os_name == 'nt' and sys_platform == 'win32')")
+            .only_extras(),
+            m("os_name == 'Linux' or os_name != 'Linux'"),
+        );
+    }
+
+    #[test]
+    fn visit_extras() {
+        let collect = |m: MarkerTree| -> Vec<(&'static str, String)> {
+            let mut collected = vec![];
+            m.visit_extras(|op, extra| {
+                let op = match op {
+                    MarkerOperator::Equal => "==",
+                    MarkerOperator::NotEqual => "!=",
+                    _ => unreachable!(),
+                };
+                collected.push((op, extra.as_str().to_string()));
+            });
+            collected
+        };
+        assert_eq!(collect(m("os_name == 'Linux'")), vec![]);
+        assert_eq!(
+            collect(m("extra == 'foo'")),
+            vec![("==", "foo".to_string())]
+        );
+        assert_eq!(
+            collect(m("extra == 'Linux' and extra == 'foo'")),
+            vec![("==", "foo".to_string()), ("==", "linux".to_string())]
+        );
+        assert_eq!(
+            collect(m("os_name == 'Linux' and extra == 'foo'")),
+            vec![("==", "foo".to_string())]
+        );
+
+        let marker = "
+            python_full_version >= '3.12'
+            and sys_platform == 'darwin'
+            and extra == 'extra-27-resolution-markers-for-days-cpu'
+            and extra != 'extra-27-resolution-markers-for-days-cu124'
+        ";
+        assert_eq!(
+            collect(m(marker)),
+            vec![
+                ("==", "extra-27-resolution-markers-for-days-cpu".to_string()),
+                (
+                    "!=",
+                    "extra-27-resolution-markers-for-days-cu124".to_string()
+                ),
+            ]
         );
     }
 }

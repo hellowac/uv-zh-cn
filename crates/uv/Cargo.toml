@@ -1,6 +1,6 @@
 [package]
 name = "uv"
-version = "0.5.5"
+version = "0.6.2"
 edition = { workspace = true }
 rust-version = { workspace = true }
 homepage = { workspace = true }
@@ -16,6 +16,7 @@ workspace = true
 [dependencies]
 uv-auth = { workspace = true }
 uv-build-backend = { workspace = true }
+uv-build-frontend = { workspace = true }
 uv-cache = { workspace = true }
 uv-cache-info = { workspace = true }
 uv-cache-key = { workspace = true }
@@ -30,6 +31,7 @@ uv-distribution-types = { workspace = true }
 uv-extract = { workspace = true }
 uv-fs = { workspace = true }
 uv-git = { workspace = true }
+uv-git-types = { workspace = true }
 uv-install-wheel = { workspace = true, default-features = false }
 uv-installer = { workspace = true }
 uv-normalize = { workspace = true }
@@ -87,6 +89,7 @@ textwrap = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
+toml_edit = { workspace = true }
 tracing = { workspace = true }
 tracing-durations-export = { workspace = true, features = ["plot"], optional = true }
 tracing-subscriber = { workspace = true, features = ["json"] }
@@ -98,16 +101,19 @@ walkdir = { workspace = true }
 which = { workspace = true }
 zip = { workspace = true }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+self-replace = { workspace = true }
+
 [dev-dependencies]
 assert_cmd = { version = "2.0.16" }
 assert_fs = { version = "1.1.2" }
-base64 = { version = "0.22.1" }
+base64 = { workspace = true }
 byteorder = { version = "1.5.0" }
 etcetera = { workspace = true }
 filetime = { version = "0.2.25" }
 flate2 = { workspace = true, default-features = false }
 ignore = { version = "0.4.23" }
-indoc = { version = "2.0.5" }
+indoc = { workspace = true }
 insta = { version = "1.40.0", features = ["filters", "json"] }
 predicates = { version = "3.1.2" }
 regex = { workspace = true }
@@ -128,8 +134,8 @@ ignored = [
 ]
 
 [features]
-default = ["python", "python-managed", "pypi", "git", "performance", "crates-io"]
-# Use better memory allocators, etc. — also turns-on self-update.
+default = ["python", "python-managed", "pypi", "git", "performance", "crates-io", "slow-tests", "test-ecosystem"]
+# Use better memory allocators, etc.
 performance = [
     "performance-memory-allocator",
     "performance-flate2-backend",
@@ -137,6 +143,7 @@ performance = [
 ]
 performance-memory-allocator = ["dep:uv-performance-memory-allocator"]
 performance-flate2-backend = ["dep:uv-performance-flate2-backend"]
+tracing-durations-export = ["dep:tracing-durations-export", "uv-resolver/tracing-durations-export"]
 
 # Introduces a dependency on a local Python installation.
 python = []
@@ -150,5 +157,9 @@ pypi = []
 git = []
 # Introduces a dependency on crates.io.
 crates-io = []
+# Include "slow" test cases.
+slow-tests = []
+# Includes test cases that require ecosystem packages
+test-ecosystem = []
 # Adds self-update functionality.
 self-update = ["axoupdater", "uv-cli/self-update"]

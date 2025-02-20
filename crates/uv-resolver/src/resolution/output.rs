@@ -7,6 +7,7 @@ use petgraph::{
     Directed, Direction,
 };
 use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
+
 use uv_configuration::{Constraints, Overrides};
 use uv_distribution::Metadata;
 use uv_distribution_types::{
@@ -21,14 +22,14 @@ use uv_pypi_types::{
     Conflicts, HashDigest, ParsedUrlError, Requirement, VerbatimParsedUrl, Yanked,
 };
 
-use crate::graph_ops::marker_reachability;
+use crate::graph_ops::{marker_reachability, simplify_conflict_markers};
 use crate::pins::FilePins;
 use crate::preferences::Preferences;
 use crate::redirect::url_to_precise;
 use crate::resolution::AnnotatedDist;
 use crate::resolution_mode::ResolutionStrategy;
 use crate::resolver::{Resolution, ResolutionDependencyEdge, ResolutionPackage};
-use crate::universal_marker::UniversalMarker;
+use crate::universal_marker::{ConflictMarker, UniversalMarker};
 use crate::{
     InMemoryIndex, MetadataResponse, Options, PythonRequirement, RequiresPython, ResolveError,
     VersionsResponse,
@@ -70,6 +71,33 @@ impl ResolutionGraphNode {
         match self {
             ResolutionGraphNode::Root => &UniversalMarker::TRUE,
             ResolutionGraphNode::Dist(dist) => &dist.marker,
+        }
+    }
+
+    pub(crate) fn package_extra_names(&self) -> Option<(&PackageName, &ExtraName)> {
+        match *self {
+            ResolutionGraphNode::Root => None,
+            ResolutionGraphNode::Dist(ref dist) => {
+                let extra = dist.extra.as_ref()?;
+                Some((&dist.name, extra))
+            }
+        }
+    }
+
+    pub(crate) fn package_group_names(&self) -> Option<(&PackageName, &GroupName)> {
+        match *self {
+            ResolutionGraphNode::Root => None,
+            ResolutionGraphNode::Dist(ref dist) => {
+                let group = dist.dev.as_ref()?;
+                Some((&dist.name, group))
+            }
+        }
+    }
+
+    pub(crate) fn package_name(&self) -> Option<&PackageName> {
+        match *self {
+            ResolutionGraphNode::Root => None,
+            ResolutionGraphNode::Dist(ref dist) => Some(&dist.name),
         }
     }
 }
@@ -147,12 +175,12 @@ impl ResolverOutput {
             // Add every edge to the graph, propagating the marker for the current fork, if
             // necessary.
             for edge in &resolution.edges {
-                if !seen.insert((edge, marker.clone())) {
+                if !seen.insert((edge, marker)) {
                     // Insert each node only once.
                     continue;
                 }
 
-                Self::add_edge(&mut graph, &mut inverse, root_index, edge, marker.clone());
+                Self::add_edge(&mut graph, &mut inverse, root_index, edge, marker);
             }
         }
 
@@ -179,18 +207,26 @@ impl ResolverOutput {
         // Compute and apply the marker reachability.
         let mut reachability = marker_reachability(&graph, &fork_markers);
 
-        // Apply the reachability to the graph.
+        // Apply the reachability to the graph and imbibe world
+        // knowledge about conflicts.
+        let conflict_marker = ConflictMarker::from_conflicts(conflicts);
         for index in graph.node_indices() {
             if let ResolutionGraphNode::Dist(dist) = &mut graph[index] {
                 dist.marker = reachability.remove(&index).unwrap_or_default();
+                dist.marker.imbibe(conflict_marker);
             }
         }
+        for weight in graph.edge_weights_mut() {
+            weight.imbibe(conflict_marker);
+        }
+
+        simplify_conflict_markers(conflicts, &mut graph);
 
         // Discard any unreachable nodes.
         graph.retain_nodes(|graph, node| !graph[node].marker().is_false());
 
         if matches!(resolution_strategy, ResolutionStrategy::Lowest) {
-            report_missing_lower_bounds(&graph, &mut diagnostics);
+            report_missing_lower_bounds(&graph, &mut diagnostics, constraints, overrides);
         }
 
         let output = Self {
@@ -414,7 +450,7 @@ impl ResolverOutput {
             (
                 ResolvedDist::Installable {
                     dist,
-                    version: version.clone(),
+                    version: Some(version.clone()),
                 },
                 hashes,
                 Some(metadata),
@@ -603,32 +639,32 @@ impl ResolverOutput {
         }
 
         /// Add all marker parameters from the given tree to the given set.
-        fn add_marker_params_from_tree(marker_tree: &MarkerTree, set: &mut IndexSet<MarkerParam>) {
+        fn add_marker_params_from_tree(marker_tree: MarkerTree, set: &mut IndexSet<MarkerParam>) {
             match marker_tree.kind() {
                 MarkerTreeKind::True => {}
                 MarkerTreeKind::False => {}
                 MarkerTreeKind::Version(marker) => {
                     set.insert(MarkerParam::Version(marker.key()));
                     for (_, tree) in marker.edges() {
-                        add_marker_params_from_tree(&tree, set);
+                        add_marker_params_from_tree(tree, set);
                     }
                 }
                 MarkerTreeKind::String(marker) => {
                     set.insert(MarkerParam::String(marker.key()));
                     for (_, tree) in marker.children() {
-                        add_marker_params_from_tree(&tree, set);
+                        add_marker_params_from_tree(tree, set);
                     }
                 }
                 MarkerTreeKind::In(marker) => {
                     set.insert(MarkerParam::String(marker.key()));
                     for (_, tree) in marker.children() {
-                        add_marker_params_from_tree(&tree, set);
+                        add_marker_params_from_tree(tree, set);
                     }
                 }
                 MarkerTreeKind::Contains(marker) => {
                     set.insert(MarkerParam::String(marker.key()));
                     for (_, tree) in marker.children() {
-                        add_marker_params_from_tree(&tree, set);
+                        add_marker_params_from_tree(tree, set);
                     }
                 }
                 // We specifically don't care about these for the
@@ -638,7 +674,7 @@ impl ResolverOutput {
                 // interested in which markers are used.
                 MarkerTreeKind::Extra(marker) => {
                     for (_, tree) in marker.children() {
-                        add_marker_params_from_tree(&tree, set);
+                        add_marker_params_from_tree(tree, set);
                     }
                 }
             }
@@ -669,7 +705,7 @@ impl ResolverOutput {
                 .constraints
                 .apply(self.overrides.apply(archive.metadata.requires_dist.iter()))
             {
-                add_marker_params_from_tree(&req.marker, &mut seen_marker_values);
+                add_marker_params_from_tree(req.marker, &mut seen_marker_values);
             }
         }
 
@@ -678,7 +714,7 @@ impl ResolverOutput {
             .constraints
             .apply(self.overrides.apply(self.requirements.iter()))
         {
-            add_marker_params_from_tree(&direct_req.marker, &mut seen_marker_values);
+            add_marker_params_from_tree(direct_req.marker, &mut seen_marker_values);
         }
 
         // Generate the final marker expression as a conjunction of
@@ -698,7 +734,7 @@ impl ResolverOutput {
                     MarkerExpression::String {
                         key: value_string.into(),
                         operator: MarkerOperator::Equal,
-                        value: from_env.to_string(),
+                        value: from_env.into(),
                     }
                 }
             };
@@ -730,8 +766,8 @@ impl ResolverOutput {
         }
         let mut dupes = vec![];
         for (name, marker_trees) in name_to_markers {
-            for (i, (version1, marker1)) in marker_trees.iter().enumerate() {
-                for (version2, marker2) in &marker_trees[i + 1..] {
+            for (i, (version1, &marker1)) in marker_trees.iter().enumerate() {
+                for (version2, &marker2) in &marker_trees[i + 1..] {
                     if version1 == version2 {
                         continue;
                     }
@@ -740,8 +776,8 @@ impl ResolverOutput {
                             name: name.clone(),
                             version1: (*version1).clone(),
                             version2: (*version2).clone(),
-                            marker1: (*marker1).clone(),
-                            marker2: (*marker2).clone(),
+                            marker1,
+                            marker2,
                         });
                     }
                 }
@@ -780,8 +816,8 @@ impl Display for ConflictingDistributionError {
         write!(
             f,
             "found conflicting versions for package `{name}`:
-             `{marker1}` (for version `{version1}`) is not disjoint with \
-             `{marker2}` (for version `{version2}`)",
+             `{marker1:?}` (for version `{version1}`) is not disjoint with \
+             `{marker2:?}` (for version `{version2}`)",
         )
     }
 }
@@ -841,7 +877,7 @@ impl From<ResolverOutput> for uv_distribution_types::Resolution {
             // above that we aren't in universal mode. If we aren't in
             // universal mode, then there can be no conflicts since
             // conflicts imply forks and forks imply universal mode.
-            let marker = graph[edge].pep508().clone();
+            let marker = graph[edge].pep508();
 
             match (&graph[source], &graph[target]) {
                 (ResolutionGraphNode::Root, ResolutionGraphNode::Dist(target_dist)) => {
@@ -879,20 +915,15 @@ impl From<ResolverOutput> for uv_distribution_types::Resolution {
 fn report_missing_lower_bounds(
     graph: &Graph<ResolutionGraphNode, UniversalMarker>,
     diagnostics: &mut Vec<ResolutionDiagnostic>,
+    constraints: &Constraints,
+    overrides: &Overrides,
 ) {
     for node_index in graph.node_indices() {
         let ResolutionGraphNode::Dist(dist) = graph.node_weight(node_index).unwrap() else {
             // Ignore the root package.
             continue;
         };
-        if dist.dev.is_some() {
-            // TODO(konsti): Dev dependencies are modelled incorrectly in the graph. There should
-            // be an edge from root to project-with-dev, just like to project-with-extra, but
-            // currently there is only an edge from project to to project-with-dev that we then
-            // have to drop.
-            continue;
-        }
-        if !has_lower_bound(node_index, dist.name(), graph) {
+        if !has_lower_bound(node_index, dist.name(), graph, constraints, overrides) {
             diagnostics.push(ResolutionDiagnostic::MissingLowerBound {
                 package_name: dist.name().clone(),
             });
@@ -905,6 +936,8 @@ fn has_lower_bound(
     node_index: NodeIndex,
     package_name: &PackageName,
     graph: &Graph<ResolutionGraphNode, UniversalMarker>,
+    constraints: &Constraints,
+    overrides: &Overrides,
 ) -> bool {
     for neighbor_index in graph.neighbors_directed(node_index, Direction::Incoming) {
         let neighbor_dist = match graph.node_weight(neighbor_index).unwrap() {
@@ -931,7 +964,10 @@ fn has_lower_bound(
         for requirement in metadata
             .requires_dist
             .iter()
+            // These bounds sources are missing from the graph.
             .chain(metadata.dependency_groups.values().flatten())
+            .chain(constraints.requirements())
+            .chain(overrides.requirements())
         {
             if requirement.name != *package_name {
                 continue;

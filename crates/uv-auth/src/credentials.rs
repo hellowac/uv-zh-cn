@@ -127,14 +127,16 @@ impl Credentials {
                 None
             } else {
                 Some(
-                    urlencoding::decode(url.username())
+                    percent_encoding::percent_decode_str(url.username())
+                        .decode_utf8()
                         .expect("An encoded username should always decode")
                         .into_owned(),
                 )
             }
             .into(),
             password: url.password().map(|password| {
-                urlencoding::decode(password)
+                percent_encoding::percent_decode_str(password)
+                    .decode_utf8()
                     .expect("An encoded password should always decode")
                     .into_owned()
             }),
@@ -237,7 +239,7 @@ impl Credentials {
     ///
     /// Any existing credentials will be overridden.
     #[must_use]
-    pub(crate) fn authenticate(&self, mut request: reqwest::Request) -> reqwest::Request {
+    pub(crate) fn authenticate(&self, mut request: Request) -> Request {
         request
             .headers_mut()
             .insert(reqwest::header::AUTHORIZATION, Self::to_header_value(self));
@@ -296,7 +298,7 @@ mod tests {
         auth_url.set_password(Some("password")).unwrap();
         let credentials = Credentials::from_url(&auth_url).unwrap();
 
-        let mut request = reqwest::Request::new(reqwest::Method::GET, url);
+        let mut request = Request::new(reqwest::Method::GET, url);
         request = credentials.authenticate(request);
 
         let mut header = request
@@ -318,7 +320,7 @@ mod tests {
         auth_url.set_password(Some("password")).unwrap();
         let credentials = Credentials::from_url(&auth_url).unwrap();
 
-        let mut request = reqwest::Request::new(reqwest::Method::GET, url);
+        let mut request = Request::new(reqwest::Method::GET, url);
         request = credentials.authenticate(request);
 
         let mut header = request
@@ -340,7 +342,7 @@ mod tests {
         auth_url.set_password(Some("password==")).unwrap();
         let credentials = Credentials::from_url(&auth_url).unwrap();
 
-        let mut request = reqwest::Request::new(reqwest::Method::GET, url);
+        let mut request = Request::new(reqwest::Method::GET, url);
         request = credentials.authenticate(request);
 
         let mut header = request

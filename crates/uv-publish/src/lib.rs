@@ -20,8 +20,9 @@ use std::time::{Duration, SystemTime};
 use std::{env, fmt, io};
 use thiserror::Error;
 use tokio::io::{AsyncReadExt, BufReader};
+use tokio::sync::Semaphore;
 use tokio_util::io::ReaderStream;
-use tracing::{debug, enabled, trace, Level};
+use tracing::{debug, enabled, trace, warn, Level};
 use url::Url;
 use uv_client::{BaseClient, OwnedArchive, RegistryClientBuilder, UvRetryableStrategy};
 use uv_configuration::{KeyringProviderType, TrustedPublishing};
@@ -369,6 +370,7 @@ pub async fn upload(
     username: Option<&str>,
     password: Option<&str>,
     check_url_client: Option<&CheckUrlClient<'_>>,
+    download_concurrency: &Semaphore,
     reporter: Arc<impl Reporter>,
 ) -> Result<bool, PublishError> {
     let form_metadata = form_metadata(file, filename)
@@ -397,7 +399,7 @@ pub async fn upload(
         if UvRetryableStrategy.handle(&result) == Some(Retryable::Transient) {
             let retry_decision = retry_policy.should_retry(start_time, n_past_retries);
             if let reqwest_retry::RetryDecision::Retry { execute_after } = retry_decision {
-                warn_user!("Transient failure while handling response for {registry}; retrying...",);
+                warn_user!("Transient failure while handling response for {registry}; retrying...");
                 reporter.on_download_complete(idx);
                 let duration = execute_after
                     .duration_since(SystemTime::now())
@@ -428,7 +430,8 @@ pub async fn upload(
                     PublishSendError::Status(..) | PublishSendError::StatusNoBody(..)
                 ) {
                     if let Some(check_url_client) = &check_url_client {
-                        if check_url(check_url_client, file, filename).await? {
+                        if check_url(check_url_client, file, filename, download_concurrency).await?
+                        {
                             // There was a raced upload of the same file, so even though our upload failed,
                             // the right file now exists in the registry.
                             return Ok(false);
@@ -450,6 +453,7 @@ pub async fn check_url(
     check_url_client: &CheckUrlClient<'_>,
     file: &Path,
     filename: &DistFilename,
+    download_concurrency: &Semaphore,
 ) -> Result<bool, PublishError> {
     let CheckUrlClient {
         index_url,
@@ -469,10 +473,29 @@ pub async fn check_url(
         .wrap_existing(client);
 
     debug!("Checking for {filename} in the registry");
-    let response = registry_client
-        .simple(filename.name(), Some(index_url), index_capabilities)
+    let response = match registry_client
+        .simple(
+            filename.name(),
+            Some(index_url),
+            index_capabilities,
+            download_concurrency,
+        )
         .await
-        .map_err(PublishError::CheckUrlIndex)?;
+    {
+        Ok(response) => response,
+        Err(err) => {
+            return match err.into_kind() {
+                uv_client::ErrorKind::PackageNotFound(_) => {
+                    // The package doesn't exist, so we can't have uploaded it.
+                    warn!(
+                        "Package not found in the registry; skipping upload check for {filename}"
+                    );
+                    Ok(false)
+                }
+                kind => Err(PublishError::CheckUrlIndex(kind.into())),
+            };
+        }
+    };
     let [(_, simple_metadata)] = response.as_slice() else {
         unreachable!("We queried a single index, we must get a single response");
     };
@@ -660,7 +683,7 @@ async fn form_metadata(
     ];
 
     if let DistFilename::WheelFilename(wheel) = filename {
-        form_metadata.push(("pyversion", wheel.python_tag.join(".")));
+        form_metadata.push(("pyversion", wheel.python_tags().iter().join(".")));
     } else {
         form_metadata.push(("pyversion", "source".to_string()));
     }

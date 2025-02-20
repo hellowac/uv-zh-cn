@@ -28,9 +28,9 @@ uv-python = { workspace = true }
 uv-static = { workspace = true }
 uv-types = { workspace = true }
 uv-virtualenv = { workspace = true }
+uv-warnings = { workspace = true }
 
 anstream = { workspace = true }
-anyhow = { workspace = true }
 fs-err = { workspace = true }
 indoc = { workspace = true }
 itertools = { workspace = true }

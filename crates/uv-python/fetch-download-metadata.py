@@ -50,7 +50,7 @@ import json
 import logging
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import Generator, Iterable, NamedTuple, Self
@@ -72,10 +72,39 @@ def batched(iterable: Iterable, n: int) -> Generator[tuple, None, None]:
         yield batch
 
 
+@dataclass(frozen=True)
+class Arch:
+    # The architecture family, e.g. "x86_64", "aarch64".
+    family: str
+    # The architecture variant, e.g., "v2" in "x86_64_v2"
+    variant: str | None = None
+
+    def key(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        return (self.family + "_" + self.variant) if self.variant else self.family
+
+    def __gt__(self, other) -> bool:
+        return (self.family, self.variant or "") > (other.family, other.variant or "")
+
+    def __lt__(self, other) -> bool:
+        return (self.family, self.variant or "") < (other.family, other.variant or "")
+
+
+type PlatformTripleKey = tuple[str, str, str]
+
+
 class PlatformTriple(NamedTuple):
+    # The operating system, e.g. "linux", "macos", "windows".
     platform: str
-    arch: str
+    # The architecture, e.g. "x86_64", "aarch64".
+    arch: Arch
+    # The libc implementation, e.g. "gnu", "musl", "none".
     libc: str
+
+    def key(self) -> PlatformTripleKey:
+        return (self.platform, self.arch.key(), self.libc)
 
 
 class Version(NamedTuple):
@@ -142,7 +171,7 @@ class CPythonFinder(Finder):
     implementation = ImplementationName.CPYTHON
 
     RELEASE_URL = (
-        "https://api.github.com/repos/indygreg/python-build-standalone/releases"
+        "https://api.github.com/repos/astral-sh/python-build-standalone/releases"
     )
 
     FLAVOR_PREFERENCES = [
@@ -209,12 +238,16 @@ class CPythonFinder(Finder):
         # Collect all available Python downloads
         for page in range(1, pages + 1):
             logging.info("Fetching CPython release page %d", page)
-            resp = await self.client.get(self.RELEASE_URL, params={"page": page})
+            resp = await self.client.get(
+                self.RELEASE_URL, params={"page": page, "per_page": 10}
+            )
             resp.raise_for_status()
             rows = resp.json()
             if not rows:
                 break
             for row in rows:
+                # Sort the assets to ensure deterministic results
+                row["assets"].sort(key=lambda asset: asset["browser_download_url"])
                 for asset in row["assets"]:
                     url = asset["browser_download_url"]
                     download = self._parse_download_url(url)
@@ -229,12 +262,12 @@ class CPythonFinder(Finder):
         downloads = []
         for version_downloads in downloads_by_version.values():
             selected: dict[
-                tuple[PlatformTriple, Variant | None],
+                tuple[PlatformTripleKey, Variant | None],
                 tuple[PythonDownload, tuple[int, int]],
             ] = {}
             for download in version_downloads:
                 priority = self._get_priority(download)
-                existing = selected.get((download.triple, download.variant))
+                existing = selected.get((download.triple.key(), download.variant))
                 if existing:
                     existing_download, existing_priority = existing
                     # Skip if we have a flavor with higher priority already (indicated by a smaller value)
@@ -247,7 +280,7 @@ class CPythonFinder(Finder):
                             existing_download.flavor,
                         )
                         continue
-                selected[(download.triple, download.variant)] = (
+                selected[(download.triple.key(), download.variant)] = (
                     download,
                     priority,
                 )
@@ -304,7 +337,7 @@ class CPythonFinder(Finder):
     def _parse_download_url(self, url: str) -> PythonDownload | None:
         """Parse an indygreg download URL into a PythonDownload object."""
         # Ex)
-        # https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.12.1%2B20240107-aarch64-unknown-linux-gnu-lto-full.tar.zst
+        # https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.12.1%2B20240107-aarch64-unknown-linux-gnu-lto-full.tar.zst
         if url.endswith(".sha256"):
             return None
         filename = unquote(url.rsplit("/", maxsplit=1)[-1])
@@ -368,11 +401,12 @@ class CPythonFinder(Finder):
 
         return PlatformTriple(operating_system, arch, libc)
 
-    def _normalize_arch(self, arch: str) -> str:
+    def _normalize_arch(self, arch: str) -> Arch:
         arch = self.ARCH_MAP.get(arch, arch)
         pieces = arch.split("_")
-        # Strip `_vN` from `x86_64`
-        return "_".join(pieces[:2])
+        family = "_".join(pieces[:2])
+        variant = pieces[2] if len(pieces) > 2 else None
+        return Arch(family, variant)
 
     def _normalize_os(self, os: str) -> str:
         return os
@@ -472,8 +506,8 @@ class PyPyFinder(Finder):
 
         return list(results.values())
 
-    def _normalize_arch(self, arch: str) -> str:
-        return self.ARCH_MAPPING.get(arch, arch)
+    def _normalize_arch(self, arch: str) -> Arch:
+        return Arch(self.ARCH_MAPPING.get(arch, arch), None)
 
     def _normalize_os(self, os: str) -> str:
         return self.PLATFORM_MAPPING.get(os, os)
@@ -539,7 +573,7 @@ def render(downloads: list[PythonDownload]) -> None:
         )
         results[key] = {
             "name": download.implementation,
-            "arch": download.triple.arch,
+            "arch": asdict(download.triple.arch),
             "os": download.triple.platform,
             "libc": download.triple.libc,
             "major": download.version.major,
@@ -563,7 +597,10 @@ async def find() -> None:
             "`GITHUB_TOKEN` env var not found, you may hit rate limits for GitHub API requests."
         )
 
-    headers = {"X-GitHub-Api-Version": "2022-11-28"}
+    headers = {
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Accept-Encoding": "gzip, deflate",
+    }
     if token:
         headers["Authorization"] = "Bearer " + token
     client = httpx.AsyncClient(follow_redirects=True, headers=headers, timeout=15)

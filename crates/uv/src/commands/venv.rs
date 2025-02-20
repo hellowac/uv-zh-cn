@@ -1,6 +1,7 @@
 use std::fmt::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::Arc;
 use std::vec;
 
 use anstream::eprint;
@@ -13,12 +14,12 @@ use uv_cache::Cache;
 use uv_client::{BaseClientBuilder, Connectivity, FlatIndexClient, RegistryClientBuilder};
 use uv_configuration::{
     BuildOptions, Concurrency, ConfigSettings, Constraints, IndexStrategy, KeyringProviderType,
-    LowerBound, NoBinary, NoBuild, SourceStrategy, TrustedHost,
+    NoBinary, NoBuild, PreviewMode, SourceStrategy, TrustedHost,
 };
-use uv_dispatch::BuildDispatch;
+use uv_dispatch::{BuildDispatch, SharedState};
 use uv_distribution_types::{DependencyMetadata, Index, IndexLocations};
 use uv_fs::Simplified;
-use uv_install_wheel::linker::LinkMode;
+use uv_install_wheel::LinkMode;
 use uv_pypi_types::Requirement;
 use uv_python::{
     EnvironmentPreference, PythonDownloads, PythonInstallation, PythonPreference, PythonRequest,
@@ -26,15 +27,15 @@ use uv_python::{
 use uv_resolver::{ExcludeNewer, FlatIndex};
 use uv_settings::PythonInstallMirrors;
 use uv_shell::{shlex_posix, shlex_windows, Shell};
-use uv_types::{BuildContext, BuildIsolation, HashStrategy};
-use uv_warnings::{warn_user, warn_user_once};
+use uv_types::{AnyErrorBuild, BuildContext, BuildIsolation, BuildStack, HashStrategy};
+use uv_warnings::warn_user;
 use uv_workspace::{DiscoveryOptions, VirtualProject, WorkspaceError};
 
 use crate::commands::pip::loggers::{DefaultInstallLogger, InstallLogger};
 use crate::commands::pip::operations::{report_interpreter, Changelog};
-use crate::commands::project::{validate_requires_python, WorkspacePython};
+use crate::commands::project::{validate_project_requires_python, WorkspacePython};
 use crate::commands::reporters::PythonDownloadReporter;
-use crate::commands::{ExitStatus, SharedState};
+use crate::commands::ExitStatus;
 use crate::printer::Printer;
 
 /// Create a virtual environment.
@@ -65,6 +66,7 @@ pub(crate) async fn venv(
     cache: &Cache,
     printer: Printer,
     relocatable: bool,
+    preview: PreviewMode,
 ) -> Result<ExitStatus> {
     match venv_impl(
         project_dir,
@@ -92,6 +94,7 @@ pub(crate) async fn venv(
         cache,
         printer,
         relocatable,
+        preview,
     )
     .await
     {
@@ -111,7 +114,7 @@ enum VenvError {
 
     #[error("Failed to install seed packages")]
     #[diagnostic(code(uv::venv::seed))]
-    Seed(#[source] anyhow::Error),
+    Seed(#[source] AnyErrorBuild),
 
     #[error("Failed to extract interpreter tags")]
     #[diagnostic(code(uv::venv::tags))]
@@ -150,6 +153,7 @@ async fn venv_impl(
     cache: &Cache,
     printer: Printer,
     relocatable: bool,
+    preview: PreviewMode,
 ) -> miette::Result<ExitStatus> {
     let project = if no_project {
         None
@@ -159,8 +163,16 @@ async fn venv_impl(
             Err(WorkspaceError::MissingProject(_)) => None,
             Err(WorkspaceError::MissingPyprojectToml) => None,
             Err(WorkspaceError::NonWorkspace(_)) => None,
+            Err(WorkspaceError::Toml(path, err)) => {
+                warn_user!(
+                    "Failed to parse `{}` during environment creation:\n{}",
+                    path.user_display().cyan(),
+                    textwrap::indent(&err.to_string(), "  ")
+                );
+                None
+            }
             Err(err) => {
-                warn_user_once!("{err}");
+                warn_user!("{err}");
                 None
             }
         }
@@ -175,7 +187,7 @@ async fn venv_impl(
                 // This isn't strictly necessary and we may want to change it later, but this
                 // avoids a breaking change when adding project environment support to `uv venv`.
                 (project.workspace().install_path() == project_dir)
-                    .then(|| project.workspace().venv())
+                    .then(|| project.workspace().venv(Some(false)))
             })
             .unwrap_or(PathBuf::from(".venv")),
     );
@@ -222,13 +234,17 @@ async fn venv_impl(
     // Add all authenticated sources to the cache.
     for index in index_locations.allowed_indexes() {
         if let Some(credentials) = index.credentials() {
-            uv_auth::store_credentials(index.raw_url(), credentials);
+            let credentials = Arc::new(credentials);
+            uv_auth::store_credentials(index.raw_url(), credentials.clone());
+            if let Some(root_url) = index.root_url() {
+                uv_auth::store_credentials(&root_url, credentials.clone());
+            }
         }
     }
 
     // Check if the discovered Python version is incompatible with the current workspace
     if let Some(requires_python) = requires_python {
-        match validate_requires_python(
+        match validate_project_requires_python(
             &interpreter,
             project.as_ref().map(VirtualProject::workspace),
             &requires_python,
@@ -269,7 +285,11 @@ async fn venv_impl(
         // Add all authenticated sources to the cache.
         for index in index_locations.allowed_indexes() {
             if let Some(credentials) = index.credentials() {
-                uv_auth::store_credentials(index.raw_url(), credentials);
+                let credentials = Arc::new(credentials);
+                uv_auth::store_credentials(index.raw_url(), credentials.clone());
+                if let Some(root_url) = index.root_url() {
+                    uv_auth::store_credentials(&root_url, credentials.clone());
+                }
             }
         }
 
@@ -322,10 +342,7 @@ async fn venv_impl(
             index_locations,
             &flat_index,
             &dependency_metadata,
-            &state.index,
-            &state.git,
-            &state.capabilities,
-            &state.in_flight,
+            state.clone(),
             index_strategy,
             &config_settings,
             BuildIsolation::Isolated,
@@ -333,37 +350,39 @@ async fn venv_impl(
             &build_options,
             &build_hasher,
             exclude_newer,
-            LowerBound::Allow,
             sources,
             concurrency,
+            preview,
         );
 
         // Resolve the seed packages.
-        let requirements = if interpreter.python_tuple() < (3, 12) {
-            // Only include `setuptools` and `wheel` on Python <3.12
+        let requirements = if interpreter.python_tuple() >= (3, 12) {
+            vec![Requirement::from(
+                uv_pep508::Requirement::from_str("pip").unwrap(),
+            )]
+        } else {
+            // Include `setuptools` and `wheel` on Python <3.12.
             vec![
                 Requirement::from(uv_pep508::Requirement::from_str("pip").unwrap()),
                 Requirement::from(uv_pep508::Requirement::from_str("setuptools").unwrap()),
                 Requirement::from(uv_pep508::Requirement::from_str("wheel").unwrap()),
             ]
-        } else {
-            vec![Requirement::from(
-                uv_pep508::Requirement::from_str("pip").unwrap(),
-            )]
         };
+
+        let build_stack = BuildStack::default();
 
         // Resolve and install the requirements.
         //
         // Since the virtual environment is empty, and the set of requirements is trivial (no
         // constraints, no editables, etc.), we can use the build dispatch APIs directly.
         let resolution = build_dispatch
-            .resolve(&requirements)
+            .resolve(&requirements, &build_stack)
             .await
-            .map_err(VenvError::Seed)?;
+            .map_err(|err| VenvError::Seed(err.into()))?;
         let installed = build_dispatch
-            .install(&resolution, &venv)
+            .install(&resolution, &venv, &build_stack)
             .await
-            .map_err(VenvError::Seed)?;
+            .map_err(|err| VenvError::Seed(err.into()))?;
 
         let changelog = Changelog::from_installed(installed);
         DefaultInstallLogger

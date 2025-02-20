@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::process::Command;
 
 use assert_fs::prelude::*;
@@ -5,13 +6,24 @@ use uv_static::EnvVars;
 
 use crate::common::{uv_snapshot, TestContext};
 
-/// and operating system.
-fn add_shared_args(mut command: Command) -> Command {
+/// Add shared arguments to a command.
+///
+/// In particular, remove any user-defined environment variables and set any machine-specific
+/// environment variables to static values.
+fn add_shared_args(mut command: Command, cwd: &Path) -> Command {
     command
+        .env_clear()
         .env(EnvVars::UV_LINK_MODE, "clone")
         .env(EnvVars::UV_CONCURRENT_DOWNLOADS, "50")
         .env(EnvVars::UV_CONCURRENT_BUILDS, "16")
-        .env(EnvVars::UV_CONCURRENT_INSTALLS, "8");
+        .env(EnvVars::UV_CONCURRENT_INSTALLS, "8")
+        // Set an explicit `XDG_CONFIG_DIRS` to avoid loading system configuration.
+        .env(EnvVars::XDG_CONFIG_DIRS, cwd);
+
+    if cfg!(unix) {
+        // Avoid locale issues in tests
+        command.env(EnvVars::LC_ALL, "C");
+    }
     command
 }
 
@@ -37,13 +49,14 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
     requirements_in.write_str("anyio>3.0.0")?;
 
     // Resolution should use the lowest direct version, and generate hashes.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -60,6 +73,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -76,6 +90,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -117,6 +132,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -129,6 +145,24 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -145,6 +179,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -161,11 +196,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -189,7 +220,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
     );
 
     // Resolution should use the highest version, and generate hashes.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .arg("--resolution=highest"), @r###"
@@ -197,6 +228,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -213,6 +245,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -229,6 +262,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -270,6 +304,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -282,6 +317,24 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -298,6 +351,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -314,11 +368,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -342,7 +392,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
     );
 
     // Resolution should use the highest version, and omit hashes.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .arg("--resolution=highest")
@@ -351,6 +401,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -367,6 +418,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -383,6 +435,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -424,6 +477,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -436,6 +490,24 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -452,6 +524,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -468,11 +541,7 @@ fn resolve_uv_toml() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -530,13 +599,14 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
     requirements_in.write_str("anyio>3.0.0")?;
 
     // Resolution should use the lowest direct version, and generate hashes.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -553,6 +623,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -569,6 +640,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -610,6 +682,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -622,6 +695,24 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -638,6 +729,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -654,11 +746,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -685,13 +773,14 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
     fs_err::remove_file(config.path())?;
 
     // Resolution should use the highest version, and omit hashes.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -708,6 +797,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -724,6 +814,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -748,6 +839,24 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -764,6 +873,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -780,11 +890,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -820,13 +926,14 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
     "#})?;
 
     // Resolution should use the lowest direct version, and generate hashes.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -843,6 +950,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -859,6 +967,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -900,6 +1009,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -912,6 +1022,24 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -928,6 +1056,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -944,11 +1073,7 @@ fn resolve_pyproject_toml() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -998,13 +1123,14 @@ fn resolve_index_url() -> anyhow::Result<()> {
     let requirements_in = context.temp_dir.child("requirements.in");
     requirements_in.write_str("anyio>3.0.0")?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -1021,6 +1147,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -1037,6 +1164,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -1078,6 +1206,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -1106,6 +1235,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -1118,6 +1248,24 @@ fn resolve_index_url() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -1134,6 +1282,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -1150,11 +1299,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -1179,7 +1324,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
 
     // Providing an additional index URL on the command-line should be merged with the
     // configuration file.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .arg("--extra-index-url")
@@ -1188,6 +1333,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -1204,6 +1350,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -1220,6 +1367,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -1263,6 +1411,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
                         origin: Some(
                             Cli,
                         ),
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -1291,6 +1440,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -1319,6 +1469,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -1331,6 +1482,24 @@ fn resolve_index_url() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -1347,6 +1516,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -1363,11 +1533,7 @@ fn resolve_index_url() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -1417,13 +1583,14 @@ fn resolve_find_links() -> anyhow::Result<()> {
     let requirements_in = context.temp_dir.child("requirements.in");
     requirements_in.write_str("tqdm")?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -1440,6 +1607,7 @@ fn resolve_find_links() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -1456,6 +1624,7 @@ fn resolve_find_links() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -1498,6 +1667,7 @@ fn resolve_find_links() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 no_index: true,
@@ -1509,6 +1679,24 @@ fn resolve_find_links() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -1525,6 +1713,7 @@ fn resolve_find_links() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -1541,11 +1730,7 @@ fn resolve_find_links() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -1594,13 +1779,14 @@ fn resolve_top_level() -> anyhow::Result<()> {
     let requirements_in = context.temp_dir.child("requirements.in");
     requirements_in.write_str("anyio>3.0.0")?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -1617,6 +1803,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -1633,6 +1820,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -1657,6 +1845,24 @@ fn resolve_top_level() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -1673,6 +1879,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -1689,11 +1896,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -1735,13 +1938,14 @@ fn resolve_top_level() -> anyhow::Result<()> {
     let requirements_in = context.temp_dir.child("requirements.in");
     requirements_in.write_str("anyio>3.0.0")?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -1758,6 +1962,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -1774,6 +1979,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -1815,6 +2021,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -1843,6 +2050,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -1855,6 +2063,24 @@ fn resolve_top_level() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -1871,6 +2097,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -1887,11 +2114,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -1915,7 +2138,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
     );
 
     // But the command-line should take precedence over both.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .arg("--resolution=lowest-direct"), @r###"
@@ -1923,6 +2146,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -1939,6 +2163,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -1955,6 +2180,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -1996,6 +2222,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -2024,6 +2251,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -2036,6 +2264,24 @@ fn resolve_top_level() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -2052,6 +2298,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -2068,11 +2315,7 @@ fn resolve_top_level() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -2120,7 +2363,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
     requirements_in.write_str("anyio>3.0.0")?;
 
     // Resolution should use the lowest direct version.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .env(EnvVars::XDG_CONFIG_HOME, xdg.path()), @r###"
@@ -2128,6 +2371,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -2144,6 +2388,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -2160,6 +2405,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -2184,6 +2430,24 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -2200,6 +2464,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -2216,11 +2481,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -2251,7 +2512,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
     "})?;
 
     // Resolution should use the lowest direct version and generate hashes.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .env(EnvVars::XDG_CONFIG_HOME, xdg.path()), @r###"
@@ -2259,6 +2520,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -2275,6 +2537,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -2291,6 +2554,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -2315,6 +2579,24 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -2331,6 +2613,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -2347,11 +2630,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -2382,7 +2661,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
     "#})?;
 
     // Resolution should use the highest version.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .env(EnvVars::XDG_CONFIG_HOME, xdg.path()), @r###"
@@ -2390,6 +2669,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -2406,6 +2686,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -2422,6 +2703,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -2446,6 +2728,24 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -2462,6 +2762,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -2478,11 +2779,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -2515,7 +2812,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
     "#})?;
 
     // Resolution should use the highest version.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .env(EnvVars::XDG_CONFIG_HOME, xdg.path()), @r###"
@@ -2523,6 +2820,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -2539,6 +2837,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -2555,6 +2854,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -2579,6 +2879,24 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -2595,6 +2913,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -2611,11 +2930,7 @@ fn resolve_user_configuration() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -2667,7 +2982,7 @@ fn resolve_tool() -> anyhow::Result<()> {
 
     // If we're running a user-level command, like `uv tool install`, we should use lowest direct,
     // but retain build isolation (since we ignore the local configuration).
-    uv_snapshot!(context.filters(), add_shared_args(context.tool_install())
+    uv_snapshot!(context.filters(), add_shared_args(context.tool_install(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .env(EnvVars::XDG_CONFIG_HOME, xdg.path()), @r###"
@@ -2675,6 +2990,7 @@ fn resolve_tool() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -2691,6 +3007,7 @@ fn resolve_tool() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -2704,6 +3021,8 @@ fn resolve_tool() -> anyhow::Result<()> {
         with: [],
         with_requirements: [],
         with_editable: [],
+        constraints: [],
+        overrides: [],
         python: None,
         refresh: None(
             Timestamp(
@@ -2725,15 +3044,12 @@ fn resolve_tool() -> anyhow::Result<()> {
                 LowestDirect,
             ),
             prerelease: None,
+            fork_strategy: None,
             dependency_metadata: None,
             config_settings: None,
             no_build_isolation: None,
             no_build_isolation_package: None,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             link_mode: Some(
                 Clone,
             ),
@@ -2758,6 +3074,7 @@ fn resolve_tool() -> anyhow::Result<()> {
             keyring_provider: Disabled,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -2766,11 +3083,7 @@ fn resolve_tool() -> anyhow::Result<()> {
             ),
             no_build_isolation: false,
             no_build_isolation_package: [],
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             link_mode: Clone,
             compile_bytecode: false,
             sources: Enabled,
@@ -2829,13 +3142,14 @@ fn resolve_poetry_toml() -> anyhow::Result<()> {
     requirements_in.write_str("anyio>3.0.0")?;
 
     // Resolution should use the lowest direct version, and generate hashes.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -2852,6 +3166,7 @@ fn resolve_poetry_toml() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -2868,6 +3183,7 @@ fn resolve_poetry_toml() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -2892,6 +3208,24 @@ fn resolve_poetry_toml() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -2908,6 +3242,7 @@ fn resolve_poetry_toml() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -2924,11 +3259,7 @@ fn resolve_poetry_toml() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -2988,13 +3319,14 @@ fn resolve_both() -> anyhow::Result<()> {
     requirements_in.write_str("anyio>3.0.0")?;
 
     // Resolution should succeed, but warn that the `pip` section in `pyproject.toml` is ignored.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -3011,6 +3343,7 @@ fn resolve_both() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -3027,6 +3360,7 @@ fn resolve_both() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -3068,6 +3402,7 @@ fn resolve_both() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -3080,6 +3415,24 @@ fn resolve_both() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -3096,6 +3449,7 @@ fn resolve_both() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -3112,11 +3466,7 @@ fn resolve_both() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -3163,7 +3513,7 @@ fn invalid_conflicts() -> anyhow::Result<()> {
     "#})?;
 
     // The file should be rejected for violating the schema.
-    uv_snapshot!(context.filters(), add_shared_args(context.lock()), @r###"
+    uv_snapshot!(context.filters(), add_shared_args(context.lock(), context.temp_dir.path()), @r###"
     success: false
     exit_code: 2
     ----- stdout -----
@@ -3190,7 +3540,7 @@ fn invalid_conflicts() -> anyhow::Result<()> {
     "#})?;
 
     // The file should be rejected for violating the schema.
-    uv_snapshot!(context.filters(), add_shared_args(context.lock()), @r###"
+    uv_snapshot!(context.filters(), add_shared_args(context.lock(), context.temp_dir.path()), @r###"
     success: false
     exit_code: 2
     ----- stdout -----
@@ -3226,7 +3576,7 @@ fn valid_conflicts() -> anyhow::Result<()> {
             [{extra = "x1"}, {extra = "x2"}],
         ]
     "#})?;
-    uv_snapshot!(context.filters(), add_shared_args(context.lock()), @r###"
+    uv_snapshot!(context.filters(), add_shared_args(context.lock(), context.temp_dir.path()), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
@@ -3262,7 +3612,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
     let requirements_in = context.temp_dir.child("requirements.in");
     requirements_in.write_str("anyio>3.0.0")?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("--config-file")
         .arg(config.path())
@@ -3271,6 +3621,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -3287,6 +3638,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -3303,6 +3655,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -3344,6 +3697,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -3356,6 +3710,24 @@ fn resolve_config_file() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -3372,6 +3744,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -3388,11 +3761,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -3428,7 +3797,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
     "#})?;
 
     // The file should be rejected for violating the schema.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("--config-file")
         .arg(config.path())
@@ -3443,7 +3812,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
       |
     1 | [project]
       |  ^^^^^^^
-    unknown field `project`, expected one of `native-tls`, `offline`, `no-cache`, `cache-dir`, `preview`, `python-preference`, `python-downloads`, `concurrent-downloads`, `concurrent-builds`, `concurrent-installs`, `index`, `index-url`, `extra-index-url`, `no-index`, `find-links`, `index-strategy`, `keyring-provider`, `allow-insecure-host`, `resolution`, `prerelease`, `dependency-metadata`, `config-settings`, `no-build-isolation`, `no-build-isolation-package`, `exclude-newer`, `link-mode`, `compile-bytecode`, `no-sources`, `upgrade`, `upgrade-package`, `reinstall`, `reinstall-package`, `no-build`, `no-build-package`, `no-binary`, `no-binary-package`, `python-install-mirror`, `pypy-install-mirror`, `publish-url`, `trusted-publishing`, `pip`, `cache-keys`, `override-dependencies`, `constraint-dependencies`, `environments`, `conflicts`, `workspace`, `sources`, `managed`, `package`, `default-groups`, `dev-dependencies`, `source-dist`, `wheel`
+    unknown field `project`, expected one of `required-version`, `native-tls`, `offline`, `no-cache`, `cache-dir`, `preview`, `python-preference`, `python-downloads`, `concurrent-downloads`, `concurrent-builds`, `concurrent-installs`, `index`, `index-url`, `extra-index-url`, `no-index`, `find-links`, `index-strategy`, `keyring-provider`, `allow-insecure-host`, `resolution`, `prerelease`, `fork-strategy`, `dependency-metadata`, `config-settings`, `no-build-isolation`, `no-build-isolation-package`, `exclude-newer`, `link-mode`, `compile-bytecode`, `no-sources`, `upgrade`, `upgrade-package`, `reinstall`, `reinstall-package`, `no-build`, `no-build-package`, `no-binary`, `no-binary-package`, `python-install-mirror`, `pypy-install-mirror`, `publish-url`, `trusted-publishing`, `check-url`, `pip`, `cache-keys`, `override-dependencies`, `constraint-dependencies`, `build-constraint-dependencies`, `environments`, `required-environments`, `conflicts`, `workspace`, `sources`, `managed`, `package`, `default-groups`, `dev-dependencies`, `build-backend`
     "###
     );
 
@@ -3462,7 +3831,7 @@ fn resolve_config_file() -> anyhow::Result<()> {
     })?;
 
     // The file should be rejected for violating the schema, with a custom warning.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("--config-file")
         .arg(config.path())
@@ -3517,7 +3886,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
 
     // Resolution in `child` should use lowest-direct, skipping the `pyproject.toml`, which lacks a
     // `tool.uv`.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .current_dir(&child), @r###"
@@ -3525,6 +3894,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -3541,6 +3911,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -3557,6 +3928,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -3581,6 +3953,24 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -3597,6 +3987,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: LowestDirect,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -3613,11 +4004,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -3651,7 +4038,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
         [tool.uv]
     "#})?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in")
         .current_dir(&child), @r###"
@@ -3659,6 +4046,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -3675,6 +4063,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -3691,6 +4080,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -3715,6 +4105,24 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -3731,6 +4139,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -3747,11 +4156,7 @@ fn resolve_skip_empty() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -3794,13 +4199,14 @@ fn allow_insecure_host() -> anyhow::Result<()> {
     let requirements_in = context.temp_dir.child("requirements.in");
     requirements_in.write_str("anyio>3.0.0")?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("--show-settings")
         .arg("requirements.in"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -3828,6 +4234,7 @@ fn allow_insecure_host() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -3844,6 +4251,7 @@ fn allow_insecure_host() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -3868,6 +4276,24 @@ fn allow_insecure_host() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -3884,6 +4310,7 @@ fn allow_insecure_host() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -3900,11 +4327,7 @@ fn allow_insecure_host() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -3948,7 +4371,7 @@ fn index_priority() -> anyhow::Result<()> {
     let requirements_in = context.temp_dir.child("requirements.in");
     requirements_in.write_str("anyio>3.0.0")?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("requirements.in")
         .arg("--show-settings")
         .arg("--index-url")
@@ -3957,6 +4380,7 @@ fn index_priority() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -3973,6 +4397,7 @@ fn index_priority() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -3989,6 +4414,7 @@ fn index_priority() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -4032,6 +4458,7 @@ fn index_priority() -> anyhow::Result<()> {
                         origin: Some(
                             Cli,
                         ),
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -4060,6 +4487,7 @@ fn index_priority() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -4072,6 +4500,24 @@ fn index_priority() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -4088,6 +4534,7 @@ fn index_priority() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -4104,11 +4551,7 @@ fn index_priority() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -4131,7 +4574,7 @@ fn index_priority() -> anyhow::Result<()> {
     "###
     );
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("requirements.in")
         .arg("--show-settings")
         .arg("--default-index")
@@ -4140,6 +4583,7 @@ fn index_priority() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -4156,6 +4600,7 @@ fn index_priority() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -4172,6 +4617,7 @@ fn index_priority() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -4215,6 +4661,7 @@ fn index_priority() -> anyhow::Result<()> {
                         origin: Some(
                             Cli,
                         ),
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -4243,6 +4690,7 @@ fn index_priority() -> anyhow::Result<()> {
                         explicit: false,
                         default: false,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -4255,6 +4703,24 @@ fn index_priority() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -4271,6 +4737,7 @@ fn index_priority() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -4287,11 +4754,7 @@ fn index_priority() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -4320,7 +4783,7 @@ fn index_priority() -> anyhow::Result<()> {
     "#})?;
 
     // Prefer the `--default-index` from the CLI, and treat it as the default.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("requirements.in")
         .arg("--show-settings")
         .arg("--default-index")
@@ -4329,6 +4792,7 @@ fn index_priority() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -4345,6 +4809,7 @@ fn index_priority() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -4361,6 +4826,7 @@ fn index_priority() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -4404,6 +4870,7 @@ fn index_priority() -> anyhow::Result<()> {
                         origin: Some(
                             Cli,
                         ),
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -4432,6 +4899,7 @@ fn index_priority() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -4444,6 +4912,24 @@ fn index_priority() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -4460,6 +4946,7 @@ fn index_priority() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -4476,11 +4963,7 @@ fn index_priority() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -4504,7 +4987,7 @@ fn index_priority() -> anyhow::Result<()> {
     );
 
     // Prefer the `--index` from the CLI, but treat the index from the file as the default.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("requirements.in")
         .arg("--show-settings")
         .arg("--index")
@@ -4513,6 +4996,7 @@ fn index_priority() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -4529,6 +5013,7 @@ fn index_priority() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -4545,6 +5030,7 @@ fn index_priority() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -4588,6 +5074,7 @@ fn index_priority() -> anyhow::Result<()> {
                         origin: Some(
                             Cli,
                         ),
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -4616,6 +5103,7 @@ fn index_priority() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -4628,6 +5116,24 @@ fn index_priority() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -4644,6 +5150,7 @@ fn index_priority() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -4660,11 +5167,7 @@ fn index_priority() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -4695,7 +5198,7 @@ fn index_priority() -> anyhow::Result<()> {
     "#})?;
 
     // Prefer the `--index-url` from the CLI, and treat it as the default.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("requirements.in")
         .arg("--show-settings")
         .arg("--index-url")
@@ -4704,6 +5207,7 @@ fn index_priority() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -4720,6 +5224,7 @@ fn index_priority() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -4736,6 +5241,7 @@ fn index_priority() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -4779,6 +5285,7 @@ fn index_priority() -> anyhow::Result<()> {
                         origin: Some(
                             Cli,
                         ),
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -4807,6 +5314,7 @@ fn index_priority() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -4819,6 +5327,24 @@ fn index_priority() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -4835,6 +5361,7 @@ fn index_priority() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -4851,11 +5378,7 @@ fn index_priority() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -4879,7 +5402,7 @@ fn index_priority() -> anyhow::Result<()> {
     );
 
     // Prefer the `--extra-index-url` from the CLI, but not as the default.
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_compile(), context.temp_dir.path())
         .arg("requirements.in")
         .arg("--show-settings")
         .arg("--extra-index-url")
@@ -4888,6 +5411,7 @@ fn index_priority() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -4904,6 +5428,7 @@ fn index_priority() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -4920,6 +5445,7 @@ fn index_priority() -> anyhow::Result<()> {
         build_constraints: [],
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         environments: SupportedEnvironments(
             [],
         ),
@@ -4963,6 +5489,7 @@ fn index_priority() -> anyhow::Result<()> {
                         origin: Some(
                             Cli,
                         ),
+                        publish_url: None,
                     },
                     Index {
                         name: None,
@@ -4991,6 +5518,7 @@ fn index_priority() -> anyhow::Result<()> {
                         explicit: false,
                         default: true,
                         origin: None,
+                        publish_url: None,
                     },
                 ],
                 flat_index: [],
@@ -5003,6 +5531,24 @@ fn index_priority() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -5019,6 +5565,7 @@ fn index_priority() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -5035,11 +5582,7 @@ fn index_priority() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -5077,7 +5620,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     let requirements_in = context.temp_dir.child("requirements.in");
     requirements_in.write_str("anyio>3.0.0")?;
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_install())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_install(), context.temp_dir.path())
         .arg("-r")
         .arg("requirements.in")
         .arg("--show-settings"), @r###"
@@ -5085,6 +5628,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -5101,6 +5645,7 @@ fn verify_hashes() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -5117,9 +5662,10 @@ fn verify_hashes() -> anyhow::Result<()> {
         constraints: [],
         overrides: [],
         build_constraints: [],
-        dry_run: false,
+        dry_run: Disabled,
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         modifications: Sufficient,
         refresh: None(
             Timestamp(
@@ -5142,6 +5688,24 @@ fn verify_hashes() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -5158,6 +5722,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -5174,11 +5739,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -5201,7 +5762,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     "###
     );
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_install())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_install(), context.temp_dir.path())
         .arg("-r")
         .arg("requirements.in")
         .arg("--no-verify-hashes")
@@ -5210,6 +5771,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -5226,6 +5788,7 @@ fn verify_hashes() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -5242,9 +5805,10 @@ fn verify_hashes() -> anyhow::Result<()> {
         constraints: [],
         overrides: [],
         build_constraints: [],
-        dry_run: false,
+        dry_run: Disabled,
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         modifications: Sufficient,
         refresh: None(
             Timestamp(
@@ -5267,6 +5831,24 @@ fn verify_hashes() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -5283,6 +5865,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -5299,11 +5882,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -5324,7 +5903,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     "###
     );
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_install())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_install(), context.temp_dir.path())
         .arg("-r")
         .arg("requirements.in")
         .arg("--require-hashes")
@@ -5333,6 +5912,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -5349,6 +5929,7 @@ fn verify_hashes() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -5365,9 +5946,10 @@ fn verify_hashes() -> anyhow::Result<()> {
         constraints: [],
         overrides: [],
         build_constraints: [],
-        dry_run: false,
+        dry_run: Disabled,
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         modifications: Sufficient,
         refresh: None(
             Timestamp(
@@ -5390,6 +5972,24 @@ fn verify_hashes() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -5406,6 +6006,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -5422,11 +6023,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -5449,7 +6046,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     "###
     );
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_install())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_install(), context.temp_dir.path())
         .arg("-r")
         .arg("requirements.in")
         .arg("--no-require-hashes")
@@ -5458,6 +6055,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -5474,6 +6072,7 @@ fn verify_hashes() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -5490,9 +6089,10 @@ fn verify_hashes() -> anyhow::Result<()> {
         constraints: [],
         overrides: [],
         build_constraints: [],
-        dry_run: false,
+        dry_run: Disabled,
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         modifications: Sufficient,
         refresh: None(
             Timestamp(
@@ -5515,6 +6115,24 @@ fn verify_hashes() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -5531,6 +6149,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -5547,11 +6166,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -5572,15 +6187,16 @@ fn verify_hashes() -> anyhow::Result<()> {
     "###
     );
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_install())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_install(), context.temp_dir.path())
         .arg("-r")
         .arg("requirements.in")
-        .env("UV_NO_VERIFY_HASHES", "1")
+        .env(EnvVars::UV_NO_VERIFY_HASHES, "1")
         .arg("--show-settings"), @r###"
     success: true
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -5597,6 +6213,7 @@ fn verify_hashes() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -5613,9 +6230,10 @@ fn verify_hashes() -> anyhow::Result<()> {
         constraints: [],
         overrides: [],
         build_constraints: [],
-        dry_run: false,
+        dry_run: Disabled,
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         modifications: Sufficient,
         refresh: None(
             Timestamp(
@@ -5638,6 +6256,24 @@ fn verify_hashes() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -5654,6 +6290,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -5670,11 +6307,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,
@@ -5695,7 +6328,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     "###
     );
 
-    uv_snapshot!(context.filters(), add_shared_args(context.pip_install())
+    uv_snapshot!(context.filters(), add_shared_args(context.pip_install(), context.temp_dir.path())
         .arg("-r")
         .arg("requirements.in")
         .arg("--verify-hashes")
@@ -5705,6 +6338,7 @@ fn verify_hashes() -> anyhow::Result<()> {
     exit_code: 0
     ----- stdout -----
     GlobalSettings {
+        required_version: None,
         quiet: false,
         verbose: 0,
         color: Auto,
@@ -5721,6 +6355,7 @@ fn verify_hashes() -> anyhow::Result<()> {
         python_preference: Managed,
         python_downloads: Automatic,
         no_progress: false,
+        installer_metadata: true,
     }
     CacheSettings {
         no_cache: false,
@@ -5737,9 +6372,10 @@ fn verify_hashes() -> anyhow::Result<()> {
         constraints: [],
         overrides: [],
         build_constraints: [],
-        dry_run: false,
+        dry_run: Disabled,
         constraints_from_workspace: [],
         overrides_from_workspace: [],
+        build_constraints_from_workspace: [],
         modifications: Sufficient,
         refresh: None(
             Timestamp(
@@ -5762,6 +6398,24 @@ fn verify_hashes() -> anyhow::Result<()> {
             },
             system: false,
             extras: None,
+            groups: DevGroupsSpecification(
+                DevGroupsSpecificationInner {
+                    include: Some(
+                        [],
+                    ),
+                    exclude: [],
+                    only_groups: false,
+                    history: DevGroupsSpecificationHistory {
+                        dev_mode: None,
+                        group: [],
+                        only_group: [],
+                        no_group: [],
+                        all_groups: false,
+                        no_default_groups: false,
+                        defaults: [],
+                    },
+                },
+            ),
             break_system_packages: false,
             target: None,
             prefix: None,
@@ -5778,6 +6432,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             dependency_mode: Transitive,
             resolution: Highest,
             prerelease: IfNecessaryOrExplicit,
+            fork_strategy: RequiresPython,
             dependency_metadata: DependencyMetadata(
                 {},
             ),
@@ -5794,11 +6449,7 @@ fn verify_hashes() -> anyhow::Result<()> {
             python_version: None,
             python_platform: None,
             universal: false,
-            exclude_newer: Some(
-                ExcludeNewer(
-                    2024-03-25T00:00:00Z,
-                ),
-            ),
+            exclude_newer: None,
             no_emit_package: [],
             emit_index_url: false,
             emit_find_links: false,

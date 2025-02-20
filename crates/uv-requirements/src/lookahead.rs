@@ -8,7 +8,6 @@ use tracing::trace;
 use uv_configuration::{Constraints, Overrides};
 use uv_distribution::{DistributionDatabase, Reporter};
 use uv_distribution_types::{Dist, DistributionMetadata};
-use uv_normalize::GroupName;
 use uv_pypi_types::{Requirement, RequirementSource};
 use uv_resolver::{InMemoryIndex, MetadataResponse, ResolverEnvironment};
 use uv_types::{BuildContext, HashStrategy, RequestedRequirements};
@@ -38,8 +37,6 @@ pub struct LookaheadResolver<'a, Context: BuildContext> {
     constraints: &'a Constraints,
     /// The overrides for the project.
     overrides: &'a Overrides,
-    /// The development dependency groups for the project.
-    dev: &'a [GroupName],
     /// The required hashes for the project.
     hasher: &'a HashStrategy,
     /// The in-memory index for resolving dependencies.
@@ -54,7 +51,6 @@ impl<'a, Context: BuildContext> LookaheadResolver<'a, Context> {
         requirements: &'a [Requirement],
         constraints: &'a Constraints,
         overrides: &'a Overrides,
-        dev: &'a [GroupName],
         hasher: &'a HashStrategy,
         index: &'a InMemoryIndex,
         database: DistributionDatabase<'a, Context>,
@@ -63,7 +59,6 @@ impl<'a, Context: BuildContext> LookaheadResolver<'a, Context> {
             requirements,
             constraints,
             overrides,
-            dev,
             hasher,
             index,
             database,
@@ -72,7 +67,7 @@ impl<'a, Context: BuildContext> LookaheadResolver<'a, Context> {
 
     /// Set the [`Reporter`] to use for this resolver.
     #[must_use]
-    pub fn with_reporter(self, reporter: impl Reporter + 'static) -> Self {
+    pub fn with_reporter(self, reporter: Arc<dyn Reporter>) -> Self {
         Self {
             database: self.database.with_reporter(reporter),
             ..self
@@ -196,7 +191,7 @@ impl<'a, Context: BuildContext> LookaheadResolver<'a, Context> {
                     .dependency_groups
                     .into_iter()
                     .filter_map(|(group, dependencies)| {
-                        if self.dev.contains(&group) {
+                        if requirement.groups.contains(&group) {
                             Some(dependencies)
                         } else {
                             None

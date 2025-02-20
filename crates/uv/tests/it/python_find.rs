@@ -1,12 +1,11 @@
 use assert_fs::prelude::PathChild;
 use assert_fs::{fixture::FileWriteStr, prelude::PathCreateDir};
-use fs_err::remove_dir_all;
 use indoc::indoc;
 
 use uv_python::platform::{Arch, Os};
 use uv_static::EnvVars;
 
-use crate::common::{uv_snapshot, TestContext};
+use crate::common::{uv_snapshot, venv_bin_path, TestContext};
 
 #[test]
 fn python_find() {
@@ -311,7 +310,7 @@ fn python_find_project() {
     [PYTHON-3.10]
 
     ----- stderr -----
-    warning: The Python request from `.python-version` resolved to Python 3.10.[X], which is incompatible with the project's Python requirement: `>=3.11`
+    warning: The Python request from `.python-version` resolved to Python 3.10.[X], which is incompatible with the project's Python requirement: `>=3.11`. Use `uv python pin` to update the `.python-version` file to a compatible version.
     "###);
 
     // Unless the pin file is outside the project, in which case we should just ignore it
@@ -450,7 +449,7 @@ fn python_find_venv() {
     "###);
 
     // But if we delete the parent virtual environment
-    remove_dir_all(context.temp_dir.child(".venv")).unwrap();
+    fs_err::remove_dir_all(context.temp_dir.child(".venv")).unwrap();
 
     // And query from there... we should not find the child virtual environment
     uv_snapshot!(context.filters(), context.python_find(), @r###"
@@ -483,6 +482,56 @@ fn python_find_venv() {
 
     ----- stderr -----
     "###);
+
+    // Or at the front of the PATH
+    #[cfg(not(windows))]
+    uv_snapshot!(context.filters(), context.python_find().env(EnvVars::UV_TEST_PYTHON_PATH, child_dir.join(".venv").join("bin").as_os_str()), @r###"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    [TEMP_DIR]/child/.venv/[BIN]/python
+
+    ----- stderr -----
+    "###);
+
+    // This holds even if there are other directories before it in the path, as long as they do
+    // not contain a Python executable
+    #[cfg(not(windows))]
+    {
+        let path = std::env::join_paths(&[
+            context.temp_dir.to_path_buf(),
+            child_dir.join(".venv").join("bin"),
+        ])
+        .unwrap();
+
+        uv_snapshot!(context.filters(), context.python_find().env(EnvVars::UV_TEST_PYTHON_PATH, path.as_os_str()), @r###"
+        success: true
+        exit_code: 0
+        ----- stdout -----
+        [TEMP_DIR]/child/.venv/[BIN]/python
+
+        ----- stderr -----
+        "###);
+    }
+
+    // But, if there's an executable _before_ the virtual environment — we prefer that
+    #[cfg(not(windows))]
+    {
+        let path = std::env::join_paths(
+            std::env::split_paths(&context.python_path())
+                .chain(std::iter::once(child_dir.join(".venv").join("bin"))),
+        )
+        .unwrap();
+
+        uv_snapshot!(context.filters(), context.python_find().env(EnvVars::UV_TEST_PYTHON_PATH, path.as_os_str()), @r###"
+        success: true
+        exit_code: 0
+        ----- stdout -----
+        [PYTHON-3.11]
+
+        ----- stderr -----
+        "###);
+    }
 }
 
 #[cfg(unix)]
@@ -558,5 +607,59 @@ fn python_find_unsupported_version() {
 
     ----- stderr -----
     error: Invalid version request: Python <3.13 does not support free-threading but 3.12t was requested.
+    "###);
+}
+
+#[test]
+fn python_find_venv_invalid() {
+    let context: TestContext = TestContext::new("3.12")
+        // Enable additional filters for Windows compatibility
+        .with_filtered_exe_suffix()
+        .with_filtered_python_names()
+        .with_filtered_virtualenv_bin();
+
+    // We find the virtual environment
+    uv_snapshot!(context.filters(), context.python_find().env(EnvVars::VIRTUAL_ENV, context.venv.as_os_str()), @r###"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    [VENV]/[BIN]/python
+
+    ----- stderr -----
+    "###);
+
+    // If the binaries are missing from a virtual environment, we fail
+    fs_err::remove_dir_all(venv_bin_path(&context.venv)).unwrap();
+
+    uv_snapshot!(context.filters(), context.python_find().env(EnvVars::VIRTUAL_ENV, context.venv.as_os_str()), @r###"
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: Failed to inspect Python interpreter from active virtual environment at `.venv/[BIN]/python`
+      Caused by: Python interpreter not found at `[VENV]/[BIN]/python`
+    "###);
+
+    // Unless the virtual environment is not active
+    uv_snapshot!(context.filters(), context.python_find(), @r###"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    [PYTHON-3.12]
+
+    ----- stderr -----
+    "###);
+
+    // If there's not a `pyvenv.cfg` file, it's also non-fatal, we ignore the environment
+    fs_err::remove_file(context.venv.join("pyvenv.cfg")).unwrap();
+
+    uv_snapshot!(context.filters(), context.python_find().env(EnvVars::VIRTUAL_ENV, context.venv.as_os_str()), @r###"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    [PYTHON-3.12]
+
+    ----- stderr -----
     "###);
 }

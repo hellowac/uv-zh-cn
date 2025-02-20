@@ -1,7 +1,6 @@
 use std::fmt;
 use std::str::FromStr;
 
-use anstream::ColorChoice;
 use anyhow::Context;
 use jiff::Timestamp;
 use owo_colors::OwoColorize;
@@ -19,6 +18,8 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer, Registry};
 use tracing_tree::time::Uptime;
 use tracing_tree::HierarchicalLayer;
+
+use uv_cli::ColorChoice;
 #[cfg(feature = "tracing-durations-export")]
 use uv_static::EnvVars;
 
@@ -117,6 +118,7 @@ where
 pub(crate) fn setup_logging(
     level: Level,
     durations: impl Layer<Registry> + Send + Sync,
+    color: ColorChoice,
 ) -> anyhow::Result<()> {
     let default_directive = match level {
         Level::Default => {
@@ -140,6 +142,24 @@ pub(crate) fn setup_logging(
         .from_env()
         .context("Invalid RUST_LOG directives")?;
 
+    // Determine our final color settings and create an anstream wrapper based on it.
+    //
+    // The tracing `with_ansi` function on affects color tracing adds *on top of* the
+    // log messages. This means that if we `debug!("{}", "hello".green())`,
+    // (a thing we absolutely do throughout uv), then there will still be color
+    // in the logs, which is undesirable.
+    //
+    // So we tell tracing to print to an anstream wrapper around stderr that force-strips ansi.
+    // Given we do this, using `with_ansi` at all is arguably pointless, but it feels morally
+    // correct to still do it? I don't know what would break if we didn't... but why find out?
+    let (ansi, color_choice) =
+        match color.and_colorchoice(anstream::Stderr::choice(&std::io::stderr())) {
+            ColorChoice::Always => (true, anstream::ColorChoice::Always),
+            ColorChoice::Never => (false, anstream::ColorChoice::Never),
+            ColorChoice::Auto => unreachable!("anstream can't return auto as choice"),
+        };
+    let writer = std::sync::Mutex::new(anstream::AutoStream::new(std::io::stderr(), color_choice));
+
     match level {
         Level::Default | Level::Verbose => {
             // Regardless of the tracing level, show messages without any adornment.
@@ -148,18 +168,13 @@ pub(crate) fn setup_logging(
                 display_level: true,
                 show_spans: false,
             };
-            let ansi = match anstream::Stderr::choice(&std::io::stderr()) {
-                ColorChoice::Always | ColorChoice::AlwaysAnsi => true,
-                ColorChoice::Never => false,
-                // We just asked anstream for a choice, that can't be auto
-                ColorChoice::Auto => unreachable!(),
-            };
+
             tracing_subscriber::registry()
                 .with(durations_layer)
                 .with(
                     tracing_subscriber::fmt::layer()
                         .event_format(format)
-                        .with_writer(std::io::stderr)
+                        .with_writer(writer)
                         .with_ansi(ansi)
                         .with_filter(filter),
                 )
@@ -173,7 +188,8 @@ pub(crate) fn setup_logging(
                     HierarchicalLayer::default()
                         .with_targets(true)
                         .with_timer(Uptime::default())
-                        .with_writer(std::io::stderr)
+                        .with_writer(writer)
+                        .with_ansi(ansi)
                         .with_filter(filter),
                 )
                 .init();

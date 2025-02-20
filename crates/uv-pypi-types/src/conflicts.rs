@@ -5,9 +5,7 @@ use uv_normalize::{ExtraName, GroupName, PackageName};
 /// This is useful to force the resolver to fork according to extras that have
 /// unavoidable conflicts with each other. (The alternative is that resolution
 /// will fail.)
-#[derive(
-    Debug, Default, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
-)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct Conflicts(Vec<ConflictSet>);
 
 impl Conflicts {
@@ -24,7 +22,7 @@ impl Conflicts {
     }
 
     /// Returns an iterator over all sets of conflicting sets.
-    pub fn iter(&self) -> impl Iterator<Item = &'_ ConflictSet> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &'_ ConflictSet> + Clone + '_ {
         self.0.iter()
     }
 
@@ -60,7 +58,7 @@ impl Conflicts {
 ///
 /// A `TryFrom<Vec<ConflictItem>>` impl may be used to build a set from a
 /// sequence. Note though that at least 2 items are required.
-#[derive(Debug, Default, Clone, Eq, PartialEq, serde::Serialize, schemars::JsonSchema)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, serde::Serialize)]
 pub struct ConflictSet(Vec<ConflictItem>);
 
 impl ConflictSet {
@@ -75,7 +73,7 @@ impl ConflictSet {
     }
 
     /// Returns an iterator over all conflicting items.
-    pub fn iter(&self) -> impl Iterator<Item = &'_ ConflictItem> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &'_ ConflictItem> + Clone + '_ {
         self.0.iter()
     }
 
@@ -120,16 +118,7 @@ impl TryFrom<Vec<ConflictItem>> for ConflictSet {
 /// Each item is a pair of a package and a corresponding extra name for that
 /// package.
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    Hash,
-    PartialEq,
-    PartialOrd,
-    Ord,
-    serde::Deserialize,
-    serde::Serialize,
-    schemars::JsonSchema,
+    Debug, Clone, Eq, Hash, PartialEq, PartialOrd, Ord, serde::Deserialize, serde::Serialize,
 )]
 #[serde(
     deny_unknown_fields,
@@ -243,7 +232,7 @@ impl<'a> From<(&'a PackageName, &'a GroupName)> for ConflictItemRef<'a> {
     }
 }
 
-impl<'a> hashbrown::Equivalent<ConflictItem> for ConflictItemRef<'a> {
+impl hashbrown::Equivalent<ConflictItem> for ConflictItemRef<'_> {
     fn equivalent(&self, key: &ConflictItem) -> bool {
         key.as_ref() == *self
     }
@@ -252,7 +241,7 @@ impl<'a> hashbrown::Equivalent<ConflictItem> for ConflictItemRef<'a> {
 /// The actual conflicting data for a package.
 ///
 /// That is, either an extra or a group name.
-#[derive(Debug, Clone, Eq, Hash, PartialEq, PartialOrd, Ord, schemars::JsonSchema)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum ConflictPackage {
     Extra(ExtraName),
     Group(GroupName),
@@ -335,7 +324,7 @@ impl<'a> From<&'a GroupName> for ConflictPackageRef<'a> {
     }
 }
 
-impl<'a> PartialEq<ConflictPackage> for ConflictPackageRef<'a> {
+impl PartialEq<ConflictPackage> for ConflictPackageRef<'_> {
     fn eq(&self, other: &ConflictPackage) -> bool {
         other.as_ref() == *self
     }
@@ -347,7 +336,7 @@ impl<'a> PartialEq<ConflictPackageRef<'a>> for ConflictPackage {
     }
 }
 
-impl<'a> hashbrown::Equivalent<ConflictPackage> for ConflictPackageRef<'a> {
+impl hashbrown::Equivalent<ConflictPackage> for ConflictPackageRef<'_> {
     fn equivalent(&self, key: &ConflictPackage) -> bool {
         key.as_ref() == *self
     }
@@ -386,9 +375,8 @@ pub enum ConflictError {
 ///
 /// N.B. `Conflicts` is still used for (de)serialization. Specifically, in the
 /// lock file, where the package name is required.
-#[derive(
-    Debug, Default, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
-)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct SchemaConflicts(Vec<SchemaConflictSet>);
 
 impl SchemaConflicts {
@@ -426,7 +414,8 @@ impl SchemaConflicts {
 /// schema format does not allow specifying the package name (or will make it
 /// optional in the future), where as the in-memory format needs the package
 /// name.
-#[derive(Debug, Default, Clone, Eq, PartialEq, serde::Serialize, schemars::JsonSchema)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, serde::Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct SchemaConflictSet(Vec<SchemaConflictItem>);
 
 /// Like [`ConflictItem`], but for deserialization in `pyproject.toml`.
@@ -436,16 +425,7 @@ pub struct SchemaConflictSet(Vec<SchemaConflictItem>);
 /// optional in the future), where as the in-memory format needs the package
 /// name.
 #[derive(
-    Debug,
-    Clone,
-    Eq,
-    Hash,
-    PartialEq,
-    PartialOrd,
-    Ord,
-    serde::Deserialize,
-    serde::Serialize,
-    schemars::JsonSchema,
+    Debug, Clone, Eq, Hash, PartialEq, PartialOrd, Ord, serde::Deserialize, serde::Serialize,
 )]
 #[serde(
     deny_unknown_fields,
@@ -455,6 +435,17 @@ pub struct SchemaConflictSet(Vec<SchemaConflictItem>);
 pub struct SchemaConflictItem {
     package: Option<PackageName>,
     conflict: ConflictPackage,
+}
+
+#[cfg(feature = "schemars")]
+impl schemars::JsonSchema for SchemaConflictItem {
+    fn schema_name() -> String {
+        "SchemaConflictItem".to_string()
+    }
+
+    fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        <ConflictItemWire as schemars::JsonSchema>::json_schema(gen)
+    }
 }
 
 impl<'de> serde::Deserialize<'de> for SchemaConflictSet {
@@ -480,7 +471,12 @@ impl TryFrom<Vec<SchemaConflictItem>> for SchemaConflictSet {
     }
 }
 
+/// A single item in a conflicting set.
+///
+/// Each item is a pair of an (optional) package and a corresponding extra or group name for that
+/// package.
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 struct ConflictItemWire {
     #[serde(default)]
     package: Option<PackageName>,

@@ -3,17 +3,18 @@ use std::path::Path;
 use anstream::print;
 use anyhow::{Error, Result};
 use futures::StreamExt;
-
+use tokio::sync::Semaphore;
 use uv_cache::{Cache, Refresh};
 use uv_cache_info::Timestamp;
 use uv_client::{Connectivity, RegistryClientBuilder};
 use uv_configuration::{
-    Concurrency, DevGroupsSpecification, LowerBound, TargetTriple, TrustedHost,
+    Concurrency, DevGroupsSpecification, PreviewMode, TargetTriple, TrustedHost,
 };
 use uv_distribution_types::IndexCapabilities;
 use uv_pep508::PackageName;
 use uv_python::{PythonDownloads, PythonPreference, PythonRequest, PythonVersion};
 use uv_resolver::{PackageMap, TreeDisplay};
+use uv_scripts::{Pep723ItemRef, Pep723Script};
 use uv_settings::PythonInstallMirrors;
 use uv_workspace::{DiscoveryOptions, Workspace};
 
@@ -21,11 +22,12 @@ use crate::commands::pip::latest::LatestClient;
 use crate::commands::pip::loggers::DefaultResolveLogger;
 use crate::commands::pip::resolution_markers;
 use crate::commands::project::lock::{do_safe_lock, LockMode};
+use crate::commands::project::lock_target::LockTarget;
 use crate::commands::project::{
-    default_dependency_groups, DependencyGroupsTarget, ProjectError, ProjectInterpreter,
+    default_dependency_groups, ProjectError, ProjectInterpreter, ScriptInterpreter, UniversalState,
 };
 use crate::commands::reporters::LatestVersionReporter;
-use crate::commands::{diagnostics, ExitStatus, SharedState};
+use crate::commands::{diagnostics, ExitStatus};
 use crate::printer::Printer;
 use crate::settings::ResolverSettings;
 
@@ -48,6 +50,7 @@ pub(crate) async fn tree(
     python: Option<String>,
     install_mirrors: PythonInstallMirrors,
     settings: ResolverSettings,
+    script: Option<Pep723Script>,
     python_preference: PythonPreference,
     python_downloads: PythonDownloads,
     connectivity: Connectivity,
@@ -57,26 +60,46 @@ pub(crate) async fn tree(
     no_config: bool,
     cache: &Cache,
     printer: Printer,
+    preview: PreviewMode,
 ) -> Result<ExitStatus> {
     // Find the project requirements.
-    let workspace = Workspace::discover(project_dir, &DiscoveryOptions::default()).await?;
-
-    // Validate that any referenced dependency groups are defined in the workspace.
-    if !frozen {
-        let target = DependencyGroupsTarget::Workspace(&workspace);
-        target.validate(&dev)?;
-    }
+    let workspace;
+    let target = if let Some(script) = script.as_ref() {
+        LockTarget::Script(script)
+    } else {
+        workspace = Workspace::discover(project_dir, &DiscoveryOptions::default()).await?;
+        LockTarget::Workspace(&workspace)
+    };
 
     // Determine the default groups to include.
-    let defaults = default_dependency_groups(workspace.pyproject_toml())?;
+    let defaults = match target {
+        LockTarget::Workspace(workspace) => default_dependency_groups(workspace.pyproject_toml())?,
+        LockTarget::Script(_) => vec![],
+    };
 
     // Find an interpreter for the project, unless `--frozen` and `--universal` are both set.
     let interpreter = if frozen && universal {
         None
     } else {
-        Some(
-            ProjectInterpreter::discover(
-                &workspace,
+        Some(match target {
+            LockTarget::Script(script) => ScriptInterpreter::discover(
+                Pep723ItemRef::Script(script),
+                python.as_deref().map(PythonRequest::parse),
+                python_preference,
+                python_downloads,
+                connectivity,
+                native_tls,
+                allow_insecure_host,
+                &install_mirrors,
+                no_config,
+                Some(false),
+                cache,
+                printer,
+            )
+            .await?
+            .into_interpreter(),
+            LockTarget::Workspace(workspace) => ProjectInterpreter::discover(
+                workspace,
                 project_dir,
                 python.as_deref().map(PythonRequest::parse),
                 python_preference,
@@ -84,14 +107,15 @@ pub(crate) async fn tree(
                 connectivity,
                 native_tls,
                 allow_insecure_host,
-                install_mirrors,
+                &install_mirrors,
                 no_config,
+                Some(false),
                 cache,
                 printer,
             )
             .await?
             .into_interpreter(),
-        )
+        })
     };
 
     // Determine the lock mode.
@@ -99,19 +123,21 @@ pub(crate) async fn tree(
         LockMode::Frozen
     } else if locked {
         LockMode::Locked(interpreter.as_ref().unwrap())
+    } else if matches!(target, LockTarget::Script(_)) && !target.lock_path().is_file() {
+        // If we're locking a script, avoid creating a lockfile if it doesn't already exist.
+        LockMode::DryRun(interpreter.as_ref().unwrap())
     } else {
         LockMode::Write(interpreter.as_ref().unwrap())
     };
 
     // Initialize any shared state.
-    let state = SharedState::default();
+    let state = UniversalState::default();
 
     // Update the lockfile, if necessary.
     let lock = match do_safe_lock(
         mode,
-        &workspace,
+        target,
         settings.as_ref(),
-        LowerBound::Allow,
         &state,
         Box::new(DefaultResolveLogger),
         connectivity,
@@ -120,12 +146,13 @@ pub(crate) async fn tree(
         allow_insecure_host,
         cache,
         printer,
+        preview,
     )
     .await
     {
         Ok(result) => result.into_lock(),
         Err(ProjectError::Operation(err)) => {
-            return diagnostics::OperationDiagnostic::default()
+            return diagnostics::OperationDiagnostic::native_tls(native_tls)
                 .report(err)
                 .map_or(Ok(ExitStatus::Failure), |err| Err(err.into()))
         }
@@ -148,7 +175,7 @@ pub(crate) async fn tree(
             .packages()
             .iter()
             .filter_map(|package| {
-                let index = match package.index(workspace.install_path()) {
+                let index = match package.index(target.install_path()) {
                     Ok(Some(index)) => index,
                     Ok(None) => return None,
                     Err(err) => return Some(Err(err)),
@@ -166,6 +193,7 @@ pub(crate) async fn tree(
                 keyring_provider,
                 resolution: _,
                 prerelease: _,
+                fork_strategy: _,
                 dependency_metadata: _,
                 config_setting: _,
                 no_build_isolation: _,
@@ -188,6 +216,7 @@ pub(crate) async fn tree(
             .keyring(*keyring_provider)
             .allow_insecure_host(allow_insecure_host.to_vec())
             .build();
+            let download_concurrency = Semaphore::new(concurrency.downloads);
 
             // Initialize the client to fetch the latest version of each package.
             let client = LatestClient {
@@ -202,9 +231,12 @@ pub(crate) async fn tree(
             let reporter = LatestVersionReporter::from(printer).with_length(packages.len() as u64);
 
             // Fetch the latest version for each package.
+            let download_concurrency = &download_concurrency;
             let mut fetches = futures::stream::iter(packages)
                 .map(|(package, index)| async move {
-                    let Some(filename) = client.find_latest(package.name(), Some(&index)).await?
+                    let Some(filename) = client
+                        .find_latest(package.name(), Some(&index), download_concurrency)
+                        .await?
                     else {
                         return Ok(None);
                     };
@@ -219,7 +251,7 @@ pub(crate) async fn tree(
                     continue;
                 };
                 reporter.on_fetch_version(package.name(), &version);
-                if version > *package.version() {
+                if package.version().is_some_and(|package| version > *package) {
                     map.insert(package.clone(), version);
                 }
             }

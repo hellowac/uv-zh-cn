@@ -6,10 +6,10 @@
 //!
 //! Then lowers them into a dependency specification.
 
+use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::{collections::BTreeMap, mem};
 
 use glob::Pattern;
 use owo_colors::OwoColorize;
@@ -19,7 +19,7 @@ use url::Url;
 
 use uv_distribution_types::{Index, IndexName};
 use uv_fs::{relative_to, PortablePathBuf};
-use uv_git::GitReference;
+use uv_git_types::GitReference;
 use uv_macros::OptionsMetadata;
 use uv_normalize::{ExtraName, GroupName, PackageName};
 use uv_pep440::{Version, VersionSpecifiers};
@@ -35,7 +35,9 @@ pub enum PyprojectTomlError {
     #[error(transparent)]
     TomlSchema(#[from] toml_edit::de::Error),
     #[error("`pyproject.toml` is using the `[project]` table, but the required `project.name` field is not set")]
-    MissingName(#[source] toml_edit::de::Error),
+    MissingName,
+    #[error("`pyproject.toml` is using the `[project]` table, but the required `project.version` field is neither set nor present in the `project.dynamic` list")]
+    MissingVersion,
 }
 
 /// A `pyproject.toml` as specified in PEP 517.
@@ -63,15 +65,8 @@ impl PyProjectToml {
     pub fn from_string(raw: String) -> Result<Self, PyprojectTomlError> {
         let pyproject: toml_edit::ImDocument<_> =
             toml_edit::ImDocument::from_str(&raw).map_err(PyprojectTomlError::TomlSyntax)?;
-        let pyproject =
-            PyProjectToml::deserialize(pyproject.into_deserializer()).map_err(|err| {
-                // TODO(konsti): A typed error would be nicer, this can break on toml upgrades.
-                if err.message().contains("missing field `name`") {
-                    PyprojectTomlError::MissingName(err)
-                } else {
-                    PyprojectTomlError::TomlSchema(err)
-                }
-            })?;
+        let pyproject = PyProjectToml::deserialize(pyproject.into_deserializer())
+            .map_err(PyprojectTomlError::TomlSchema)?;
         Ok(PyProjectToml { raw, ..pyproject })
     }
 
@@ -90,6 +85,13 @@ impl PyProjectToml {
 
         // Otherwise, a project is assumed to be a package if `build-system` is present.
         self.build_system.is_some()
+    }
+
+    /// Returns `true` if the project uses a dynamic version.
+    pub fn is_dynamic(&self) -> bool {
+        self.project
+            .as_ref()
+            .is_some_and(|project| project.version.is_none())
     }
 
     /// Returns whether the project manifest contains any script table.
@@ -207,7 +209,7 @@ impl<'de> Deserialize<'de> for DependencyGroupSpecifier {
 /// See <https://packaging.python.org/en/latest/specifications/pyproject-toml>.
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(test, derive(Serialize))]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case", try_from = "ProjectWire")]
 pub struct Project {
     /// The name of the project
     pub name: PackageName,
@@ -226,6 +228,48 @@ pub struct Project {
     /// Used to determine whether a `scripts` section is present.
     #[serde(default, skip_serializing)]
     pub(crate) scripts: Option<serde::de::IgnoredAny>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+struct ProjectWire {
+    name: Option<PackageName>,
+    version: Option<Version>,
+    dynamic: Option<Vec<String>>,
+    requires_python: Option<VersionSpecifiers>,
+    dependencies: Option<Vec<String>>,
+    optional_dependencies: Option<BTreeMap<ExtraName, Vec<String>>>,
+    gui_scripts: Option<serde::de::IgnoredAny>,
+    scripts: Option<serde::de::IgnoredAny>,
+}
+
+impl TryFrom<ProjectWire> for Project {
+    type Error = PyprojectTomlError;
+
+    fn try_from(value: ProjectWire) -> Result<Self, Self::Error> {
+        // If `[project.name]` is not present, show a dedicated error message.
+        let name = value.name.ok_or(PyprojectTomlError::MissingName)?;
+
+        // If `[project.version]` is not present (or listed in `[project.dynamic]`), show a dedicated error message.
+        if value.version.is_none()
+            && !value
+                .dynamic
+                .as_ref()
+                .is_some_and(|dynamic| dynamic.iter().any(|field| field == "version"))
+        {
+            return Err(PyprojectTomlError::MissingVersion);
+        }
+
+        Ok(Project {
+            name,
+            version: value.version,
+            requires_python: value.requires_python,
+            dependencies: value.dependencies,
+            optional_dependencies: value.optional_dependencies,
+            gui_scripts: value.gui_scripts,
+            scripts: value.scripts,
+        })
+    }
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -255,7 +299,7 @@ pub struct ToolUv {
         example = r#"
             [tool.uv.sources]
             httpx = { git = "https://github.com/encode/httpx", tag = "0.27.0" }
-            pytest =  { url = "https://files.pythonhosted.org/packages/6b/77/7440a06a8ead44c7757a64362dd22df5760f9b12dc5f11b6188cd2fc27a0/pytest-8.3.3-py3-none-any.whl" }
+            pytest = { url = "https://files.pythonhosted.org/packages/6b/77/7440a06a8ead44c7757a64362dd22df5760f9b12dc5f11b6188cd2fc27a0/pytest-8.3.3-py3-none-any.whl" }
             pydantic = { path = "/path/to/pydantic", editable = true }
         "#
     )]
@@ -272,7 +316,7 @@ pub struct ToolUv {
     /// [`extra_index_url`](#extra-index-url). uv will only consider the first index that contains
     /// a given package, unless an alternative [index strategy](#index-strategy) is specified.
     ///
-    /// If an index is marked as `explicit = true`, it will be used exclusively for those
+    /// If an index is marked as `explicit = true`, it will be used exclusively for the
     /// dependencies that select it explicitly via `[tool.uv.sources]`, as in:
     ///
     /// ```toml
@@ -350,8 +394,8 @@ pub struct ToolUv {
     ///
     /// Use of this field is not recommend anymore. Instead, use the `dependency-groups.dev` field
     /// which is a standardized way to declare development dependencies. The contents of
-    /// `tool.uv.dev-dependencies` and `dependency-groups.dev` are combined to determine the the
-    /// final requirements of the `dev` dependency group.
+    /// `tool.uv.dev-dependencies` and `dependency-groups.dev` are combined to determine the final
+    /// requirements of the `dev` dependency group.
     #[cfg_attr(
         feature = "schemars",
         schemars(
@@ -429,11 +473,42 @@ pub struct ToolUv {
         value_type = "list[str]",
         example = r#"
             # Ensure that the grpcio version is always less than 1.65, if it's requested by a
-            # transitive dependency.
+            # direct or transitive dependency.
             constraint-dependencies = ["grpcio<1.65"]
         "#
     )]
     pub constraint_dependencies: Option<Vec<uv_pep508::Requirement<VerbatimParsedUrl>>>,
+
+    /// Constraints to apply when solving build dependencies.
+    ///
+    /// Build constraints are used to restrict the versions of build dependencies that are selected
+    /// when building a package during resolution or installation.
+    ///
+    /// Including a package as a constraint will _not_ trigger installation of the package during
+    /// a build; instead, the package must be requested elsewhere in the project's build dependency
+    /// graph.
+    ///
+    /// !!! note
+    ///     In `uv lock`, `uv sync`, and `uv run`, uv will only read `build-constraint-dependencies` from
+    ///     the `pyproject.toml` at the workspace root, and will ignore any declarations in other
+    ///     workspace members or `uv.toml` files.
+    #[cfg_attr(
+        feature = "schemars",
+        schemars(
+            with = "Option<Vec<String>>",
+            description = "PEP 508-style requirements, e.g., `ruff==0.5.0`, or `ruff @ https://...`."
+        )
+    )]
+    #[option(
+        default = "[]",
+        value_type = "list[str]",
+        example = r#"
+            # Ensure that the setuptools v60.0.0 is used whenever a package has a build dependency
+            # on setuptools.
+            build-constraint-dependencies = ["setuptools==60.0.0"]
+        "#
+    )]
+    pub build_constraint_dependencies: Option<Vec<uv_pep508::Requirement<VerbatimParsedUrl>>>,
 
     /// A list of supported environments against which to resolve dependencies.
     ///
@@ -441,7 +516,7 @@ pub struct ToolUv {
     /// However, you can restrict the set of supported environments to improve performance and avoid
     /// unsatisfiable branches in the solution space.
     ///
-    /// These environments will also respected when `uv pip compile` is invoked with the
+    /// These environments will also be respected when `uv pip compile` is invoked with the
     /// `--universal` flag.
     #[cfg_attr(
         feature = "schemars",
@@ -460,48 +535,83 @@ pub struct ToolUv {
     )]
     pub environments: Option<SupportedEnvironments>,
 
-    /// Conflicting extras or groups may be declared here.
+    /// A list of required platforms, for packages that lack source distributions.
     ///
-    /// It's useful to declare conflicts when, for example, two or more extras
-    /// have mutually incompatible dependencies. Extra `foo` might depend
-    /// on `numpy==2.0.0` while extra `bar` might depend on `numpy==2.1.0`.
-    /// These extras cannot be activated at the same time. This usually isn't
-    /// a problem for pip-style workflows, but when using projects in uv that
-    /// support with universal resolution, it will try to produce a resolution
-    /// that satisfies both extras simultaneously.
+    /// When a package does not have a source distribution, it's availability will be limited to
+    /// the platforms supported by its built distributions (wheels). For example, if a package only
+    /// publishes wheels for Linux, then it won't be installable on macOS or Windows.
     ///
-    /// When this happens, resolution will fail, because one cannot install
-    /// both `numpy 2.0.0` and `numpy 2.1.0` into the same environment.
+    /// By default, uv requires each package to include at least one wheel that is compatible with
+    /// the designated Python version. The `required-environments` setting can be used to ensure that
+    /// the resulting resolution contains wheels for specific platforms, or fails if no such wheels
+    /// are available.
     ///
-    /// To work around this, you may specify `foo` and `bar` as conflicting
-    /// extras (you can do the same with groups). When doing universal
-    /// resolution in project mode, these extras will get their own "forks"
-    /// distinct from one another in order to permit conflicting dependencies.
-    /// In exchange, if one tries to install from the lock file with both
-    /// conflicting extras activated, installation will fail.
+    /// While the `environments` setting _limits_ the set of environments that uv will consider when
+    /// resolving dependencies, `required-environments` _expands_ the set of platforms that uv _must_
+    /// support when resolving dependencies.
+    ///
+    /// For example, `environments = ["sys_platform == 'darwin'"]` would limit uv to solving for
+    /// macOS (and ignoring Linux and Windows). On the other hand, `required-environments = ["sys_platform == 'darwin'"]`
+    /// would _require_ that any package without a source distribution include a wheel for macOS in
+    /// order to be installable.
     #[cfg_attr(
         feature = "schemars",
-        schemars(description = "A list sets of conflicting groups or extras.")
+        schemars(
+            with = "Option<Vec<String>>",
+            description = "A list of environment markers, e.g., `sys_platform == 'darwin'."
+        )
+    )]
+    #[option(
+        default = "[]",
+        value_type = "str | list[str]",
+        example = r#"
+            # Require that the package is available for macOS ARM and x86 (Intel).
+            required-environments = [
+                "sys_platform == 'darwin' and platform_machine == 'arm64'",
+                "sys_platform == 'darwin' and platform_machine == 'x86_64'",
+            ]
+        "#
+    )]
+    pub required_environments: Option<SupportedEnvironments>,
+
+    /// Declare collections of extras or dependency groups that are conflicting
+    /// (i.e., mutually exclusive).
+    ///
+    /// It's useful to declare conflicts when two or more extras have mutually
+    /// incompatible dependencies. For example, extra `foo` might depend
+    /// on `numpy==2.0.0` while extra `bar` depends on `numpy==2.1.0`. While these
+    /// dependencies conflict, it may be the case that users are not expected to
+    /// activate both `foo` and `bar` at the same time, making it possible to
+    /// generate a universal resolution for the project despite the incompatibility.
+    ///
+    /// By making such conflicts explicit, uv can generate a universal resolution
+    /// for a project, taking into account that certain combinations of extras and
+    /// groups are mutually exclusive. In exchange, installation will fail if a
+    /// user attempts to activate both conflicting extras.
+    #[cfg_attr(
+        feature = "schemars",
+        schemars(description = "A list of sets of conflicting groups or extras.")
     )]
     #[option(
         default = r#"[]"#,
         value_type = "list[list[dict]]",
         example = r#"
-            # Require that `package[test1]` and `package[test2]`
-            # requirements are resolved in different forks so that they
-            # cannot conflict with one another.
+            # Require that `package[extra1]` and `package[extra2]` are resolved
+            # in different forks so that they cannot conflict with one another.
             conflicts = [
                 [
-                    { extra = "test1" },
-                    { extra = "test2" },
+                    { extra = "extra1" },
+                    { extra = "extra2" },
                 ]
             ]
 
-            # Or, to declare conflicting groups:
+            # Require that the dependency groups `group1` and `group2`
+            # are resolved in different forks so that they cannot conflict
+            # with one another.
             conflicts = [
                 [
-                    { group = "test1" },
-                    { group = "test2" },
+                    { group = "group1" },
+                    { group = "group2" },
                 ]
             ]
         "#
@@ -819,7 +929,7 @@ impl TryFrom<SourcesWire> for Sources {
                         };
 
                         let mut hint = lhs.negate();
-                        hint.and(rhs.clone());
+                        hint.and(rhs);
                         let hint = hint
                             .contents()
                             .map(|contents| contents.to_string())
@@ -1202,42 +1312,42 @@ impl<'de> Deserialize<'de> for Source {
         if let Some(workspace) = workspace {
             if index.is_some() {
                 return Err(serde::de::Error::custom(
-                    "cannot specify both `index` and `index`",
+                    "cannot specify both `workspace` and `index`",
                 ));
             }
             if git.is_some() {
                 return Err(serde::de::Error::custom(
-                    "cannot specify both `index` and `git`",
+                    "cannot specify both `workspace` and `git`",
                 ));
             }
             if url.is_some() {
                 return Err(serde::de::Error::custom(
-                    "cannot specify both `index` and `url`",
+                    "cannot specify both `workspace` and `url`",
                 ));
             }
             if path.is_some() {
                 return Err(serde::de::Error::custom(
-                    "cannot specify both `index` and `path`",
+                    "cannot specify both `workspace` and `path`",
                 ));
             }
             if rev.is_some() {
                 return Err(serde::de::Error::custom(
-                    "cannot specify both `index` and `rev`",
+                    "cannot specify both `workspace` and `rev`",
                 ));
             }
             if tag.is_some() {
                 return Err(serde::de::Error::custom(
-                    "cannot specify both `index` and `tag`",
+                    "cannot specify both `workspace` and `tag`",
                 ));
             }
             if branch.is_some() {
                 return Err(serde::de::Error::custom(
-                    "cannot specify both `index` and `branch`",
+                    "cannot specify both `workspace` and `branch`",
                 ));
             }
             if editable.is_some() {
                 return Err(serde::de::Error::custom(
-                    "cannot specify both `index` and `editable`",
+                    "cannot specify both `workspace` and `editable`",
                 ));
             }
 
@@ -1272,6 +1382,10 @@ pub enum SourceError {
     UnusedTag(String, String),
     #[error("`{0}` did not resolve to a Git repository, but a Git reference (`--branch {1}`) was provided.")]
     UnusedBranch(String, String),
+    #[error("`{0}` did not resolve to a local directory, but the `--editable` flag was provided. Editable installs are only supported for local directories.")]
+    UnusedEditable(String),
+    #[error("Workspace dependency `{0}` was marked as `--no-editable`, but workspace dependencies are always added in editable mode. Pass `--no-editable` to `uv sync` or `uv run` to install workspace dependencies in non-editable mode.")]
+    UnusedNoEditable(String),
     #[error("Failed to resolve absolute path")]
     Absolute(#[from] std::io::Error),
     #[error("Path contains invalid characters: `{}`", _0.display())]
@@ -1306,6 +1420,20 @@ impl Source {
             }
             if let Some(branch) = branch {
                 return Err(SourceError::UnusedBranch(name.to_string(), branch));
+            }
+        }
+
+        if workspace {
+            // If a workspace source is added with `--no-editable`, error.
+            if editable == Some(false) {
+                return Err(SourceError::UnusedNoEditable(name.to_string()));
+            }
+        } else {
+            // If we resolved a non-path source, and user specified an `--editable` flag, error.
+            if !matches!(source, RequirementSource::Directory { .. }) {
+                if editable == Some(true) {
+                    return Err(SourceError::UnusedEditable(name.to_string()));
+                }
             }
         }
 
@@ -1361,36 +1489,33 @@ impl Source {
                 group: None,
             },
             RequirementSource::Url {
-                subdirectory, url, ..
+                location,
+                subdirectory,
+                ..
             } => Source::Url {
-                url: url.to_url(),
+                url: location,
                 subdirectory: subdirectory.map(PortablePathBuf::from),
                 marker: MarkerTree::TRUE,
                 extra: None,
                 group: None,
             },
             RequirementSource::Git {
-                repository,
-                mut reference,
-                subdirectory,
-                ..
+                git, subdirectory, ..
             } => {
                 if rev.is_none() && tag.is_none() && branch.is_none() {
-                    let rev = match reference {
-                        GitReference::FullCommit(ref mut rev) => Some(mem::take(rev)),
-                        GitReference::Branch(ref mut rev) => Some(mem::take(rev)),
-                        GitReference::Tag(ref mut rev) => Some(mem::take(rev)),
-                        GitReference::ShortCommit(ref mut rev) => Some(mem::take(rev)),
-                        GitReference::BranchOrTag(ref mut rev) => Some(mem::take(rev)),
-                        GitReference::BranchOrTagOrCommit(ref mut rev) => Some(mem::take(rev)),
-                        GitReference::NamedRef(ref mut rev) => Some(mem::take(rev)),
+                    let rev = match git.reference() {
+                        GitReference::Branch(rev) => Some(rev),
+                        GitReference::Tag(rev) => Some(rev),
+                        GitReference::BranchOrTag(rev) => Some(rev),
+                        GitReference::BranchOrTagOrCommit(rev) => Some(rev),
+                        GitReference::NamedRef(rev) => Some(rev),
                         GitReference::DefaultBranch => None,
                     };
                     Source::Git {
-                        rev,
+                        rev: rev.cloned(),
                         tag,
                         branch,
-                        git: repository,
+                        git: git.repository().clone(),
                         subdirectory: subdirectory.map(PortablePathBuf::from),
                         marker: MarkerTree::TRUE,
                         extra: None,
@@ -1401,7 +1526,7 @@ impl Source {
                         rev,
                         tag,
                         branch,
-                        git: repository,
+                        git: git.repository().clone(),
                         subdirectory: subdirectory.map(PortablePathBuf::from),
                         marker: MarkerTree::TRUE,
                         extra: None,
@@ -1415,13 +1540,13 @@ impl Source {
     }
 
     /// Return the [`MarkerTree`] for the source.
-    pub fn marker(&self) -> &MarkerTree {
+    pub fn marker(&self) -> MarkerTree {
         match self {
-            Source::Git { marker, .. } => marker,
-            Source::Url { marker, .. } => marker,
-            Source::Path { marker, .. } => marker,
-            Source::Registry { marker, .. } => marker,
-            Source::Workspace { marker, .. } => marker,
+            Source::Git { marker, .. } => *marker,
+            Source::Url { marker, .. } => *marker,
+            Source::Path { marker, .. } => *marker,
+            Source::Registry { marker, .. } => *marker,
+            Source::Workspace { marker, .. } => *marker,
         }
     }
 

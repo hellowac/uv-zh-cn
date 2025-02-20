@@ -6,14 +6,15 @@ use owo_colors::OwoColorize;
 use std::collections::{BTreeSet, HashSet};
 use std::fmt::Write;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tracing::debug;
 use uv_tool::InstalledTools;
 
 use uv_cache::Cache;
 use uv_client::{BaseClientBuilder, RegistryClient};
 use uv_configuration::{
-    BuildOptions, Concurrency, ConfigSettings, Constraints, ExtrasSpecification, Overrides,
-    Reinstall, Upgrade,
+    BuildOptions, Concurrency, ConfigSettings, Constraints, DevGroupsSpecification, DryRun,
+    ExtrasSpecification, Overrides, Reinstall, Upgrade,
 };
 use uv_dispatch::BuildDispatch;
 use uv_distribution::DistributionDatabase;
@@ -25,9 +26,9 @@ use uv_distribution_types::{
     DistributionMetadata, IndexLocations, InstalledMetadata, Name, Resolution,
 };
 use uv_fs::Simplified;
-use uv_install_wheel::linker::LinkMode;
+use uv_install_wheel::LinkMode;
 use uv_installer::{Plan, Planner, Preparer, SitePackages};
-use uv_normalize::{GroupName, PackageName};
+use uv_normalize::PackageName;
 use uv_platform_tags::Tags;
 use uv_pypi_types::{Conflicts, ResolverMarkerEnvironment};
 use uv_python::{PythonEnvironment, PythonInstallation};
@@ -36,9 +37,8 @@ use uv_requirements::{
     SourceTreeResolver,
 };
 use uv_resolver::{
-    DependencyMode, DerivationChainBuilder, Exclusions, FlatIndex, InMemoryIndex, Manifest,
-    Options, Preference, Preferences, PythonRequirement, Resolver, ResolverEnvironment,
-    ResolverOutput,
+    DependencyMode, Exclusions, FlatIndex, InMemoryIndex, Manifest, Options, Preference,
+    Preferences, PythonRequirement, Resolver, ResolverEnvironment, ResolverOutput,
 };
 use uv_types::{HashStrategy, InFlight, InstalledPackagesProvider};
 use uv_warnings::warn_user;
@@ -54,13 +54,31 @@ pub(crate) async fn read_requirements(
     constraints: &[RequirementsSource],
     overrides: &[RequirementsSource],
     extras: &ExtrasSpecification,
+    groups: &DevGroupsSpecification,
     client_builder: &BaseClientBuilder<'_>,
 ) -> Result<RequirementsSpecification, Error> {
     // If the user requests `extras` but does not provide a valid source (e.g., a `pyproject.toml`),
     // return an error.
     if !extras.is_empty() && !requirements.iter().any(RequirementsSource::allows_extras) {
+        let hint = if requirements.iter().any(|source| {
+            matches!(
+                source,
+                RequirementsSource::Editable(_) | RequirementsSource::SourceTree(_)
+            )
+        }) {
+            "Use `<dir>[extra]` syntax or `-r <file>` instead."
+        } else {
+            "Use `package[extra]` syntax instead."
+        };
         return Err(anyhow!(
-            "Requesting extras requires a `pyproject.toml`, `setup.cfg`, or `setup.py` file."
+            "Requesting extras requires a `pyproject.toml`, `setup.cfg`, or `setup.py` file. {hint}"
+        )
+        .into());
+    }
+    if !groups.is_empty() && !requirements.iter().any(RequirementsSource::allows_groups) {
+        let flags = groups.history().as_flags_pretty().join(" ");
+        return Err(anyhow!(
+            "Requesting groups requires a `pyproject.toml`. Requested via: {flags}"
         )
         .into());
     }
@@ -92,11 +110,11 @@ pub(crate) async fn resolve<InstalledPackages: InstalledPackagesProvider>(
     requirements: Vec<UnresolvedRequirementSpecification>,
     constraints: Vec<NameRequirementSpecification>,
     overrides: Vec<UnresolvedRequirementSpecification>,
-    dev: Vec<GroupName>,
     source_trees: Vec<PathBuf>,
     mut project: Option<PackageName>,
-    workspace_members: Option<BTreeSet<PackageName>>,
+    workspace_members: BTreeSet<PackageName>,
     extras: &ExtrasSpecification,
+    groups: &DevGroupsSpecification,
     preferences: Vec<Preference>,
     installed_packages: InstalledPackages,
     hasher: &HashStrategy,
@@ -140,7 +158,7 @@ pub(crate) async fn resolve<InstalledPackages: InstalledPackagesProvider>(
                     index,
                     DistributionDatabase::new(client, build_dispatch, concurrency.downloads),
                 )
-                .with_reporter(ResolverReporter::from(printer))
+                .with_reporter(Arc::new(ResolverReporter::from(printer)))
                 .resolve(unnamed.into_iter())
                 .await?,
             );
@@ -150,11 +168,12 @@ pub(crate) async fn resolve<InstalledPackages: InstalledPackagesProvider>(
         if !source_trees.is_empty() {
             let resolutions = SourceTreeResolver::new(
                 extras,
+                groups,
                 hasher,
                 index,
                 DistributionDatabase::new(client, build_dispatch, concurrency.downloads),
             )
-            .with_reporter(ResolverReporter::from(printer))
+            .with_reporter(Arc::new(ResolverReporter::from(printer)))
             .resolve(source_trees.iter().map(PathBuf::as_path))
             .await?;
 
@@ -223,7 +242,7 @@ pub(crate) async fn resolve<InstalledPackages: InstalledPackagesProvider>(
                     index,
                     DistributionDatabase::new(client, build_dispatch, concurrency.downloads),
                 )
-                .with_reporter(ResolverReporter::from(printer))
+                .with_reporter(Arc::new(ResolverReporter::from(printer)))
                 .resolve(unnamed.into_iter())
                 .await?,
             );
@@ -249,12 +268,11 @@ pub(crate) async fn resolve<InstalledPackages: InstalledPackagesProvider>(
                 &requirements,
                 &constraints,
                 &overrides,
-                &dev,
                 hasher,
                 index,
                 DistributionDatabase::new(client, build_dispatch, concurrency.downloads),
             )
-            .with_reporter(ResolverReporter::from(printer))
+            .with_reporter(Arc::new(ResolverReporter::from(printer)))
             .resolve(&resolver_env)
             .await?
         }
@@ -269,7 +287,6 @@ pub(crate) async fn resolve<InstalledPackages: InstalledPackagesProvider>(
         requirements,
         constraints,
         overrides,
-        dev,
         preferences,
         project,
         workspace_members,
@@ -301,7 +318,7 @@ pub(crate) async fn resolve<InstalledPackages: InstalledPackagesProvider>(
             installed_packages,
             DistributionDatabase::new(client, build_dispatch, concurrency.downloads),
         )?
-        .with_reporter(reporter);
+        .with_reporter(Arc::new(reporter));
 
         resolver.resolve().await?
     };
@@ -400,7 +417,8 @@ pub(crate) async fn install(
     cache: &Cache,
     venv: &PythonEnvironment,
     logger: Box<dyn InstallLogger>,
-    dry_run: bool,
+    installer_metadata: bool,
+    dry_run: DryRun,
     printer: Printer,
 ) -> Result<Changelog, Error> {
     let start = std::time::Instant::now();
@@ -421,7 +439,7 @@ pub(crate) async fn install(
         )
         .context("Failed to determine installation plan")?;
 
-    if dry_run {
+    if dry_run.enabled() {
         report_dry_run(resolution, plan, modifications, start, printer)?;
         return Ok(Changelog::default());
     }
@@ -463,39 +481,13 @@ pub(crate) async fn install(
             build_options,
             DistributionDatabase::new(client, build_dispatch, concurrency.downloads),
         )
-        .with_reporter(PrepareReporter::from(printer).with_length(remote.len() as u64));
+        .with_reporter(Arc::new(
+            PrepareReporter::from(printer).with_length(remote.len() as u64),
+        ));
 
         let wheels = preparer
-            .prepare(remote.clone(), in_flight)
-            .await
-            .map_err(Error::from)
-            .map_err(|err| match err {
-                // Attach resolution context to the error.
-                Error::Prepare(uv_installer::PrepareError::Download(dist, chain, err)) => {
-                    debug_assert!(chain.is_empty());
-                    let chain =
-                        DerivationChainBuilder::from_resolution(resolution, (&*dist).into())
-                            .unwrap_or_default();
-                    Error::Prepare(uv_installer::PrepareError::Download(dist, chain, err))
-                }
-                Error::Prepare(uv_installer::PrepareError::Build(dist, chain, err)) => {
-                    debug_assert!(chain.is_empty());
-                    let chain =
-                        DerivationChainBuilder::from_resolution(resolution, (&*dist).into())
-                            .unwrap_or_default();
-                    Error::Prepare(uv_installer::PrepareError::Build(dist, chain, err))
-                }
-                Error::Prepare(uv_installer::PrepareError::DownloadAndBuild(dist, chain, err)) => {
-                    debug_assert!(chain.is_empty());
-                    let chain =
-                        DerivationChainBuilder::from_resolution(resolution, (&*dist).into())
-                            .unwrap_or_default();
-                    Error::Prepare(uv_installer::PrepareError::DownloadAndBuild(
-                        dist, chain, err,
-                    ))
-                }
-                _ => err,
-            })?;
+            .prepare(remote.clone(), in_flight, resolution)
+            .await?;
 
         logger.on_prepare(wheels.len(), start, printer)?;
 
@@ -549,7 +541,10 @@ pub(crate) async fn install(
         installs = uv_installer::Installer::new(venv)
             .with_link_mode(link_mode)
             .with_cache(cache)
-            .with_reporter(InstallReporter::from(printer).with_length(installs.len() as u64))
+            .with_installer_metadata(installer_metadata)
+            .with_reporter(Arc::new(
+                InstallReporter::from(printer).with_length(installs.len() as u64),
+            ))
             // This technically can block the runtime, but we are on the main thread and
             // have no other running tasks at this point, so this lets us avoid spawning a blocking
             // task.

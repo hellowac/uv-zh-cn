@@ -7,7 +7,7 @@ use tracing::debug;
 
 use uv_cache::Cache;
 use uv_client::{BaseClientBuilder, Connectivity};
-use uv_configuration::{Concurrency, TrustedHost};
+use uv_configuration::{Concurrency, DryRun, PreviewMode, TrustedHost};
 use uv_fs::CWD;
 use uv_normalize::PackageName;
 use uv_pypi_types::Requirement;
@@ -22,12 +22,13 @@ use uv_tool::InstalledTools;
 use crate::commands::pip::loggers::{
     DefaultInstallLogger, SummaryResolveLogger, UpgradeInstallLogger,
 };
+use crate::commands::pip::operations::Modifications;
 use crate::commands::project::{
-    resolve_environment, sync_environment, update_environment, EnvironmentUpdate,
+    resolve_environment, sync_environment, update_environment, EnvironmentUpdate, PlatformState,
 };
 use crate::commands::reporters::PythonDownloadReporter;
 use crate::commands::tool::common::remove_entrypoints;
-use crate::commands::{conjunction, tool::common::install_executables, ExitStatus, SharedState};
+use crate::commands::{conjunction, tool::common::install_executables, ExitStatus};
 use crate::printer::Printer;
 use crate::settings::ResolverInstallerSettings;
 
@@ -41,11 +42,13 @@ pub(crate) async fn upgrade(
     filesystem: ResolverInstallerOptions,
     python_preference: PythonPreference,
     python_downloads: PythonDownloads,
+    installer_metadata: bool,
     concurrency: Concurrency,
     native_tls: bool,
     allow_insecure_host: &[TrustedHost],
     cache: &Cache,
     printer: Printer,
+    preview: PreviewMode,
 ) -> Result<ExitStatus> {
     let installed_tools = InstalledTools::from_settings()?.init()?;
     let _lock = installed_tools.lock().await?;
@@ -122,10 +125,12 @@ pub(crate) async fn upgrade(
             &args,
             cache,
             &filesystem,
+            installer_metadata,
             connectivity,
             concurrency,
             native_tls,
             allow_insecure_host,
+            preview,
         )
         .await;
 
@@ -173,17 +178,19 @@ pub(crate) async fn upgrade(
     }
 
     if let Some(python_request) = python_request {
-        let tools = did_upgrade_environment
-            .iter()
-            .map(|name| format!("`{}`", name.cyan()))
-            .collect::<Vec<_>>();
-        let s = if tools.len() > 1 { "s" } else { "" };
-        writeln!(
-            printer.stderr(),
-            "Upgraded tool environment{s} for {} to {}",
-            conjunction(tools),
-            python_request.cyan(),
-        )?;
+        if !did_upgrade_environment.is_empty() {
+            let tools = did_upgrade_environment
+                .iter()
+                .map(|name| format!("`{}`", name.cyan()))
+                .collect::<Vec<_>>();
+            let s = if tools.len() > 1 { "s" } else { "" };
+            writeln!(
+                printer.stderr(),
+                "Upgraded tool environment{s} for {} to {}",
+                conjunction(tools),
+                python_request.cyan(),
+            )?;
+        }
     }
 
     Ok(ExitStatus::Success)
@@ -211,10 +218,12 @@ async fn upgrade_tool(
     args: &ResolverInstallerOptions,
     cache: &Cache,
     filesystem: &ResolverInstallerOptions,
+    installer_metadata: bool,
     connectivity: Connectivity,
     concurrency: Concurrency,
     native_tls: bool,
     allow_insecure_host: &[TrustedHost],
+    preview: PreviewMode,
 ) -> Result<UpgradeOutcome> {
     // Ensure the tool is installed.
     let existing_tool_receipt = match installed_tools.get_tool_receipt(name) {
@@ -265,12 +274,19 @@ async fn upgrade_tool(
     let settings = ResolverInstallerSettings::from(options.clone());
 
     // Resolve the requirements.
-    let requirements = existing_tool_receipt.requirements();
-    let spec =
-        RequirementsSpecification::from_constraints(requirements.to_vec(), constraints.to_vec());
+    let spec = RequirementsSpecification::from_overrides(
+        existing_tool_receipt.requirements().to_vec(),
+        existing_tool_receipt
+            .constraints()
+            .iter()
+            .chain(constraints)
+            .cloned()
+            .collect(),
+        existing_tool_receipt.overrides().to_vec(),
+    );
 
     // Initialize any shared state.
-    let state = SharedState::default();
+    let state = PlatformState::default();
 
     // Check if we need to create a new environment — if so, resolve it first, then
     // install the requested tool
@@ -290,6 +306,7 @@ async fn upgrade_tool(
             allow_insecure_host,
             cache,
             printer,
+            preview,
         )
         .await?;
 
@@ -298,15 +315,18 @@ async fn upgrade_tool(
         let environment = sync_environment(
             environment,
             &resolution.into(),
+            Modifications::Exact,
             settings.as_ref().into(),
             &state,
             Box::new(DefaultInstallLogger),
+            installer_metadata,
             connectivity,
             concurrency,
             native_tls,
             allow_insecure_host,
             cache,
             printer,
+            preview,
         )
         .await?;
 
@@ -321,16 +341,20 @@ async fn upgrade_tool(
         } = update_environment(
             environment,
             spec,
+            Modifications::Exact,
             &settings,
             &state,
             Box::new(SummaryResolveLogger),
             Box::new(UpgradeInstallLogger::new(name.clone())),
+            installer_metadata,
             connectivity,
             concurrency,
             native_tls,
             allow_insecure_host,
             cache,
+            DryRun::Disabled,
             printer,
+            preview,
         )
         .await?;
 
@@ -361,7 +385,9 @@ async fn upgrade_tool(
             ToolOptions::from(options),
             true,
             existing_tool_receipt.python().to_owned(),
-            requirements.to_vec(),
+            existing_tool_receipt.requirements().to_vec(),
+            existing_tool_receipt.constraints().to_vec(),
+            existing_tool_receipt.overrides().to_vec(),
             printer,
         )?;
     }

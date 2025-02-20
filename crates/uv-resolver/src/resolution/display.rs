@@ -66,7 +66,7 @@ impl<'a> DisplayResolutionGraph<'a> {
         for fork_marker in &underlying.fork_markers {
             assert!(
                 fork_marker.conflict().is_true(),
-                "found fork marker {fork_marker} with non-trivial conflicting marker, \
+                "found fork marker {fork_marker:?} with non-trivial conflicting marker, \
                  cannot display resolver output with conflicts in requirements.txt format",
             );
         }
@@ -332,9 +332,7 @@ type RequirementsTxtGraph<'dist> = Graph<RequirementsTxtDist<'dist>, (), Directe
 /// We also remove the root node, to simplify the graph structure.
 fn combine_extras<'dist>(graph: &IntermediatePetGraph<'dist>) -> RequirementsTxtGraph<'dist> {
     /// Return the key for a node.
-    fn version_marker<'dist>(
-        dist: &'dist RequirementsTxtDist,
-    ) -> (&'dist PackageName, &'dist MarkerTree) {
+    fn version_marker<'dist>(dist: &'dist RequirementsTxtDist) -> (&'dist PackageName, MarkerTree) {
         (dist.name(), dist.markers)
     }
 
@@ -406,6 +404,13 @@ fn strip_extras<'dist>(graph: &IntermediatePetGraph<'dist>) -> RequirementsTxtGr
                 let index = *entry.get();
                 let node: &mut RequirementsTxtDist = &mut next[index];
                 node.extras.clear();
+                // Consider:
+                // ```
+                // foo[bar]==1.0.0; sys_platform == 'linux'
+                // foo==1.0.0; sys_platform != 'linux'
+                // ```
+                // In this case, we want to write `foo==1.0.0; sys_platform == 'linux' or sys_platform == 'windows'`
+                node.markers.or(dist.markers);
             }
             std::collections::hash_map::Entry::Vacant(entry) => {
                 let index = next.add_node(dist.clone());
